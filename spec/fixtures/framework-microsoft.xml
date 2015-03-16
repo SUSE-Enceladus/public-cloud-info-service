@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<framework name="microsoft">
+  <servers>
+    <server type="smt" name="smt1-us-west.cloudapp.net" ip="23.100.46.123" region="West US"/>
+    <server type="smt" name="smt2-us-west.cloudapp.net" ip="23.101.192.253" region="West US"/>
+    <server type="regionserver" name="reg-us-west.cloudapp.net" ip="23.100.36.229" region="West US"/>
+  </servers>
+  <images>
+    <image name="suse-sles-11-sp3-v20150127" id="" state="current" replacementid="" replacementname="" publishedon="2015-01-27" deprecatedon="" deletedon=""/>
+  </images>
+</framework>
