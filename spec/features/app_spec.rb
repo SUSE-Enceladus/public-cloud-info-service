@@ -19,6 +19,25 @@ describe 'Root Path' do
   end
 end
 
+describe 'supported version' do
+  describe 'v1' do
+    it 'responds successfully' do
+      get "v1/#{$valid_providers.first}/#{$valid_categories.first}"
+      expect(last_response.status).to eq 200
+    end
+  end
+
+  describe 'any other version' do
+    before { get "/v2/#{$valid_providers.first}/#{$valid_categories.first}" }
+    it 'is 400 Bad Request' do
+      expect(last_response.status).to eq 400
+    end
+    it 'returns no body' do
+      expect(last_response.body).to eq ''
+    end
+  end
+end
+
 describe 'route validation' do
   describe 'provider' do
     describe 'valid providers' do
@@ -73,9 +92,9 @@ describe 'route validation' do
     end
 
     describe 'invalid extentions' do
-      it 'is 415 Unsupported Media Type' do
+      it 'is 400 Bad Request' do
         get "v1/#{$valid_providers.first}/#{$valid_categories.first}.foo"
-        expect(last_response.status).to eq 415
+        expect(last_response.status).to eq 400
       end
     end
   end

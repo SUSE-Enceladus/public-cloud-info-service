@@ -33,7 +33,7 @@ class PublicCloudInfoSrv < Sinatra::Base
 
   def validate_params_ext()
     params[:ext] ||= 'json'
-    settings.extensions.include?(params[:ext]) || halt(415)
+    settings.extensions.include?(params[:ext]) || halt(400)
   end
 
   get '/' do
@@ -45,5 +45,9 @@ class PublicCloudInfoSrv < Sinatra::Base
     validate_params_category
     validate_params_provider
     "You asked for #{ params[:provider] }'s #{ params[:category] }, in the #{ params[:ext] } format."
+  end
+
+  get '/*' do
+    status 400
   end
 end
