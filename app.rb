@@ -9,6 +9,7 @@
 
 require 'sinatra/base'
 require 'nokogiri'
+require 'json'
 
 class PublicCloudInfoSrv < Sinatra::Base
   set :root, File.dirname(__FILE__)
@@ -40,6 +41,7 @@ class PublicCloudInfoSrv < Sinatra::Base
     set :providers, frameworks.keys
   end
 
+
   def validate_params_provider()
     settings.providers.include?(params[:provider]) || halt(404)
   end
@@ -53,6 +55,7 @@ class PublicCloudInfoSrv < Sinatra::Base
     settings.extensions.include?(params[:ext]) || halt(400)
   end
 
+
   get '/' do
     "SUSE Public Cloud Information Server"
   end
@@ -62,7 +65,15 @@ class PublicCloudInfoSrv < Sinatra::Base
     validate_params_category
     validate_params_provider
 
-    "You asked for #{ params[:provider] }'s #{ params[:category] }, in the #{ params[:ext] } format."
+    content_type params[:ext]
+    case params[:ext]
+    when 'json'
+      {}.to_json
+    when 'xml'
+      Nokogiri::XML::Builder.new { |xml|
+        xml.root
+      }.to_xml
+    end
   end
 
   get '/*' do

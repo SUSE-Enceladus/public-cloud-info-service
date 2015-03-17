@@ -99,3 +99,29 @@ describe 'route validation' do
     end
   end
 end
+
+describe 'response type' do
+  before do
+    @path = "v1/#{$valid_providers.first}/#{$valid_categories.first}"
+  end
+
+  describe 'Content-Type header' do
+    it 'matches the supplied extension' do
+      get "#{@path}.json"
+      expect(last_response.content_type).to eq "application/json"
+
+      get "#{@path}.xml"
+      expect(last_response.content_type).to eq "application/xml;charset=utf-8"
+    end
+  end
+
+  describe 'body' do
+    it 'matches the supplied extension' do
+      get "#{@path}.json"
+      expect(last_response.body[0,1]).to eq "{"
+
+      get "#{@path}.xml"
+      expect(last_response.body[0,21]).to eq '<?xml version="1.0"?>'
+    end
+  end
+end
