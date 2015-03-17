@@ -17,10 +17,24 @@ class PublicCloudInfoSrv < Sinatra::Base
   require 'bundler'
   Bundler.require :default, ENV['RACK_ENV'].to_sym
 
+  def self.import_framework(file_path)
+    document = Nokogiri::XML(File.open(file_path))
+    if framework_tag = document.at_css('framework[name]')
+      settings.providers << framework_tag[:name]
+    end
+  end
+
   configure do
-    set :providers,  %w(amazon google hp microsoft)
+    set :providers,  []
     set :categories, %w(servers images)
     set :extensions, %w(json xml)
+
+    if ENV['FRAMEWORKS']
+      Dir.glob(ENV['FRAMEWORKS']).each do |path|
+        puts path
+        import_framework(path)
+      end
+    end
   end
 
   def validate_params_provider()

@@ -8,6 +8,7 @@
 # THE PERPETRATOR TO CRIMINAL AND CIVIL LIABILITY.
 
 ENV['RACK_ENV'] = 'test'
+ENV['FRAMEWORKS'] = File.expand_path(File.join(File.dirname(__FILE__), "fixtures/*.xml"))
 
 require_relative File.join('..', 'app.rb')
 require 'rspec'
