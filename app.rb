@@ -19,22 +19,25 @@ class PublicCloudInfoSrv < Sinatra::Base
 
   def self.import_framework(file_path)
     document = Nokogiri::XML(File.open(file_path))
-    if framework_tag = document.at_css('framework[name]')
-      settings.providers << framework_tag[:name]
+    if ((framework_tag = document.at_css('framework')) && framework_tag[:name])
+      { framework_tag[:name] => framework_tag }
+    else
+      {}
     end
   end
 
   configure do
-    set :providers,  []
     set :categories, %w(servers images)
     set :extensions, %w(json xml)
 
+    frameworks = {}
     if ENV['FRAMEWORKS']
       Dir.glob(ENV['FRAMEWORKS']).each do |path|
-        puts path
-        import_framework(path)
+        frameworks.merge! import_framework(path)
       end
     end
+    set :frameworks, frameworks
+    set :providers, frameworks.keys
   end
 
   def validate_params_provider()
@@ -58,6 +61,7 @@ class PublicCloudInfoSrv < Sinatra::Base
     validate_params_ext
     validate_params_category
     validate_params_provider
+
     "You asked for #{ params[:provider] }'s #{ params[:category] }, in the #{ params[:ext] } format."
   end
 
