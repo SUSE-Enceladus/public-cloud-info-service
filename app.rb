@@ -20,11 +20,11 @@ class PublicCloudInfoSrv < Sinatra::Base
 
   def self.import_framework(file_path)
     document = Nokogiri::XML(File.open(file_path))
-    if ((framework_tag = document.at_css('framework')) && framework_tag[:name])
-      { framework_tag[:name] => framework_tag }
-    else
-      {}
-    end
+    Hash[
+      document.css('framework').collect do |framework_tag|
+        [framework_tag[:name], framework_tag ] if framework_tag[:name]
+      end
+    ]
   end
 
   configure do
