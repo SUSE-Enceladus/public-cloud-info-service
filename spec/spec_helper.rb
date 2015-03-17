@@ -20,3 +20,7 @@ RSpec.configure do |config|
     PublicCloudInfoSrv
   end
 end
+
+$valid_providers  = %w(amazon google hp microsoft)
+$valid_categories = %w(images servers)
+$valid_extensions = %w(json xml)

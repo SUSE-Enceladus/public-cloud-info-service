@@ -11,16 +11,39 @@ require 'sinatra/base'
 require 'nokogiri'
 
 class PublicCloudInfoSrv < Sinatra::Base
-
   set :root, File.dirname(__FILE__)
 
   ENV['RACK_ENV'] ||= 'development'
   require 'bundler'
   Bundler.require :default, ENV['RACK_ENV'].to_sym
 
-
-  get '/' do
-    "Hello World!"
+  configure do
+    set :providers,  %w(amazon google hp microsoft)
+    set :categories, %w(servers images)
+    set :extensions, %w(json xml)
   end
 
+  def validate_params_provider()
+    settings.providers.include?(params[:provider]) || halt(404)
+  end
+
+  def validate_params_category()
+    settings.categories.include?(params[:category]) || halt(404)
+  end
+
+  def validate_params_ext()
+    params[:ext] ||= 'json'
+    settings.extensions.include?(params[:ext]) || halt(415)
+  end
+
+  get '/' do
+    "SUSE Public Cloud Information Server"
+  end
+
+  get '/v1/:provider/:category.?:ext?' do
+    validate_params_ext
+    validate_params_category
+    validate_params_provider
+    "You asked for #{ params[:provider] }'s #{ params[:category] }, in the #{ params[:ext] } format."
+  end
 end
