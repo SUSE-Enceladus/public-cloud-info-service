@@ -90,7 +90,7 @@ The script runs daily on a VM on our server in Provo.
 
 The information service will return properly formatted XML or JSON data.
 
-Client IOmplementation
+Client Implementation
 ---------------------
 
 We will implement a client in Python based on the same ideas used in
