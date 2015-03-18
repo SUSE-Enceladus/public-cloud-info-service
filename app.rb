@@ -56,6 +56,32 @@ class PublicCloudInfoSrv < Sinatra::Base
   end
 
 
+  def servers(provider)
+    settings.frameworks[provider].css("servers>server")
+  end
+
+  def images(provider)
+    settings.frameworks[provider].css("images>image")
+  end
+
+
+  def responses_as_xml(category, responses)
+    Nokogiri::XML::Builder.new { |xml|
+      xml.send(category) {
+        xml.parent << responses
+      }
+    }.to_xml
+  end
+
+  def responses_as_json(category, responses)
+    {
+      category => responses.collect { |response|
+        response.attributes.to_hash
+      }
+    }.to_json
+  end
+
+
   get '/' do
     "SUSE Public Cloud Information Server"
   end
@@ -65,14 +91,14 @@ class PublicCloudInfoSrv < Sinatra::Base
     validate_params_category
     validate_params_provider
 
+    responses = send(params[:category], params[:provider])
+
     content_type params[:ext]
     case params[:ext]
     when 'json'
-      {}.to_json
+      responses_as_json(params[:category], responses)
     when 'xml'
-      Nokogiri::XML::Builder.new { |xml|
-        xml.root
-      }.to_xml
+      responses_as_xml(params[:category], responses)
     end
   end
 

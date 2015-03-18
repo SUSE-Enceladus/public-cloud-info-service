@@ -102,7 +102,7 @@ end
 
 describe 'response type' do
   before do
-    @path = "v1/#{$valid_providers.first}/#{$valid_categories.first}"
+    @path = "/v1/#{$valid_providers.first}/#{$valid_categories.first}"
   end
 
   describe 'Content-Type header' do
@@ -122,6 +122,69 @@ describe 'response type' do
 
       get "#{@path}.xml"
       expect(last_response.body[0,21]).to eq '<?xml version="1.0"?>'
+    end
+  end
+end
+
+describe 'response content' do
+  before do
+    @path = '/v1/microsoft/'
+  end
+  describe 'servers category' do
+    before do
+      @path << 'servers'
+    end
+    describe 'json format' do
+      before do
+        @path << '.json'
+      end
+      it 'should match a defined sample' do
+        expected_response = IO.read(File.join(File.dirname(__FILE__), "../fixtures", @path))
+
+        get @path
+        expect(last_response.body.strip).to eq expected_response.strip
+      end
+    end
+
+    describe 'xml format' do
+      before do
+        @path << '.xml'
+      end
+      it 'should match a defined sample' do
+        expected_response = IO.read(File.join(File.dirname(__FILE__), "../fixtures", @path))
+
+        get @path
+        expect(last_response.body.strip).to eq expected_response.strip
+      end
+    end
+  end
+
+  describe 'images category' do
+    before do
+      @path << 'images'
+    end
+    describe 'json format' do
+      before do
+        @path << '.json'
+      end
+      it 'should match a defined sample' do
+        expected_response = IO.read(File.join(File.dirname(__FILE__), "../fixtures", @path))
+
+        get @path
+        expect(last_response.body.strip).to eq expected_response.strip
+      end
+    end
+
+    describe 'xml format' do
+      before do
+        @path << '.xml'
+      end
+      it 'should match a defined sample' do
+        expected_response = IO.read(File.join(File.dirname(__FILE__), "../fixtures", @path))
+
+        get @path
+        expect(last_response.body.strip).to eq expected_response.strip
+      end
     end
   end
 end
