@@ -1,11 +1,19 @@
 # Copyright © 2015 SUSE LLC, James Mason <jmason@suse.com>.
-# All Rights Reserved.
 #
-# THIS WORK IS SUBJECT TO U.S. AND INTERNATIONAL COPYRIGHT LAWS AND TREATIES.
-# IT MAY NOT BE USED, COPIED, DISTRIBUTED, DISCLOSED, ADAPTED, PERFORMED,
-# DISPLAYED, COLLECTED, COMPILED, OR LINKED WITHOUT SUSE'S PRIOR WRITTEN
-# CONSENT. USE OR EXPLOITATION OF THIS WORK WITHOUT AUTHORIZATION COULD SUBJECT
-# THE PERPETRATOR TO CRIMINAL AND CIVIL LIABILITY.
+# This file is part of publicCloudInfoSrv.
+#
+# publicCloudInfoSrv is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# publicCloudInfoSrv is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with publicCloudInfoSrv. If not, see <http://www.gnu.org/licenses/>.
 
 require 'sinatra/base'
 require 'nokogiri'
