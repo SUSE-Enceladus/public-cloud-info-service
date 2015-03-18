@@ -1,0 +1,18 @@
+<VirtualHost *:80>
+  ServerAdmin jmason@suse.com
+  ServerName susepubliccloudinfo.attachmate.com
+  DocumentRoot /srv/www/publicCloudInfoSrv/public
+  Include /etc/apache2/conf.d/mod_passenger.conf
+  SetEnv FRAMEWORKS /srv/www/publicCloudInfoSrv/spec/fixtures/framework-*.xml
+  <Directory "/srv/www/publicCloudInfoSrv/public">
+    Options -MultiViews 
+    <IfModule mod_access_compat.c>
+    Order allow,deny
+    Allow from all
+    </IfModule>
+    <IfModule !mod_access_compat.c>
+      Require all granted
+    </IfModule>
+  </Directory>
+</VirtualHost>
+
