@@ -1,4 +1,4 @@
-# Copyright © 2014 SUSE LLC, James Mason <jmason@suse.com>.
+# Copyright © 2015 SUSE LLC, James Mason <jmason@suse.com>.
 # All Rights Reserved.
 #
 # THIS WORK IS SUBJECT TO U.S. AND INTERNATIONAL COPYRIGHT LAWS AND TREATIES.
