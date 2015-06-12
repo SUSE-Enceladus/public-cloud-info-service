@@ -52,8 +52,35 @@ namespace :gems do
   end
 end
 
+namespace :obs do
+  task :tar do |task|
+    app = %w(app.rb config.ru)
+    docs = %w(LICENSE README.md publicCloudInfoSrv.apache-passenger-conf-sample)
+    mkdir name_version
+    cp (app + docs), "#{name_version}/"
+    system "tar cjvf #{tarball_filename} #{name_version}"
+    rm_rf name_version
+    system "ls -la #{tarball_filename}"
+  end
+  
+  task :cp, [:dest] => [:tar] do |task, args|
+    sources = [tarball_filename, Dir.glob("*.spec")].flatten
+    cp sources, "#{args.dest}/"
+    rm tarball_filename
+    puts "\nNext steps:\ncd #{args.dest}; osc build ..."
+  end
+end
+
 def gemspecs(gemfile)
   ENV['BUNDLE_GEMFILE'] = gemfile
   lockfile = Bundler::LockfileParser.new(Bundler.read_file(gemfile))
   lockfile.specs.collect(&:name).sort
+end
+
+def name_version
+  $name_version ||= `rpm -q --specfile --qf '%{NAME}-%{VERSION}' *.spec`
+end
+
+def tarball_filename
+  "#{name_version}.tar.bz2"
 end
