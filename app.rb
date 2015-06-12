@@ -23,8 +23,6 @@ class PublicCloudInfoSrv < Sinatra::Base
   set :root, File.dirname(__FILE__)
 
   ENV['RACK_ENV'] ||= 'development'
-  require 'bundler'
-  Bundler.require :default, ENV['RACK_ENV'].to_sym
 
   def self.import_framework(file_path)
     document = Nokogiri::XML(File.open(file_path))
