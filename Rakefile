@@ -55,9 +55,10 @@ end
 namespace :obs do
   task :tar do |task|
     app = %w(app.rb config.ru)
-    docs = %w(LICENSE README.md publicCloudInfoSrv.apache-passenger-conf-sample)
+    configs = %w(publicCloudInfo-server.conf)
+    docs = %w(LICENSE README.md)
     mkdir name_version
-    cp (app + docs), "#{name_version}/"
+    cp (app + configs + docs), "#{name_version}/"
     system "tar cjvf #{tarball_filename} #{name_version}"
     rm_rf name_version
     system "ls -la #{tarball_filename}"
