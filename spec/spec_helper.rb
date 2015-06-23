@@ -34,3 +34,10 @@ end
 $valid_providers  = %w(amazon google hp microsoft)
 $valid_categories = %w(images servers)
 $valid_extensions = %w(json xml)
+
+def compare_with_fixture(path)
+  expected_response = IO.read(File.join(File.dirname(__FILE__), "fixtures", path))
+
+  get path
+  expect(last_response.body.strip).to eq expected_response.strip
+end

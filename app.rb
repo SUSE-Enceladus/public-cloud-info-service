@@ -36,6 +36,7 @@ class PublicCloudInfoSrv < Sinatra::Base
   configure do
     set :categories, %w(servers images)
     set :extensions, %w(json xml)
+    set :server_types, %w(smt regionserver)
 
     frameworks = {}
     if ENV['FRAMEWORKS']
@@ -61,9 +62,17 @@ class PublicCloudInfoSrv < Sinatra::Base
     settings.extensions.include?(params[:ext]) || halt(400)
   end
 
+  def validate_params_server_type()
+    settings.server_types.include?(params[:server_type]) || halt(400)
+  end
+
 
   def servers(provider)
     settings.frameworks[provider].css("servers>server")
+  end
+
+  def servers_of_type(provider, server_type)
+    settings.frameworks[provider].css("servers>server[type='#{server_type}']")
   end
 
   def images(provider)
@@ -89,6 +98,16 @@ class PublicCloudInfoSrv < Sinatra::Base
     }.to_json
   end
 
+  def respond_with(format, category, responses)
+    content_type format
+
+    case format
+    when 'json'
+      responses_as_json(category, responses)
+    when 'xml'
+      responses_as_xml(category, responses)
+    end
+  end
 
   get '/' do
     "SUSE Public Cloud Information Server"
@@ -101,13 +120,17 @@ class PublicCloudInfoSrv < Sinatra::Base
 
     responses = send(params[:category], params[:provider])
 
-    content_type params[:ext]
-    case params[:ext]
-    when 'json'
-      responses_as_json(params[:category], responses)
-    when 'xml'
-      responses_as_xml(params[:category], responses)
-    end
+    respond_with params[:ext], params[:category], responses
+  end
+
+  get '/v1/:provider/servers/:server_type.?:ext?' do
+    validate_params_ext
+    validate_params_provider
+    validate_params_server_type
+
+    responses = servers_of_type(params[:provider], params[:server_type])
+
+    respond_with params[:ext], :servers, responses
   end
 
   get '/*' do

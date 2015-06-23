@@ -135,64 +135,87 @@ describe 'response type' do
   end
 end
 
-describe 'response content' do
+describe 'response content: /v1/microsoft' do
   before do
-    @path = '/v1/microsoft/'
-  end
-  describe 'servers category' do
-    before do
-      @path << 'servers'
-    end
-    describe 'json format' do
-      before do
-        @path << '.json'
-      end
-      it 'should match a defined sample' do
-        expected_response = IO.read(File.join(File.dirname(__FILE__), "../fixtures", @path))
-
-        get @path
-        expect(last_response.body.strip).to eq expected_response.strip
-      end
-    end
-
-    describe 'xml format' do
-      before do
-        @path << '.xml'
-      end
-      it 'should match a defined sample' do
-        expected_response = IO.read(File.join(File.dirname(__FILE__), "../fixtures", @path))
-
-        get @path
-        expect(last_response.body.strip).to eq expected_response.strip
-      end
-    end
+    @path = '/v1/microsoft'
   end
 
-  describe 'images category' do
+  describe '/servers' do
     before do
-      @path << 'images'
+      @path << '/servers'
     end
-    describe 'json format' do
-      before do
+
+    describe '.json' do
+      it 'should match a defined sample' do
         @path << '.json'
-      end
-      it 'should match a defined sample' do
-        expected_response = IO.read(File.join(File.dirname(__FILE__), "../fixtures", @path))
-
-        get @path
-        expect(last_response.body.strip).to eq expected_response.strip
+        compare_with_fixture(@path)
       end
     end
 
-    describe 'xml format' do
-      before do
-        @path << '.xml'
-      end
+    describe '.xml' do
       it 'should match a defined sample' do
-        expected_response = IO.read(File.join(File.dirname(__FILE__), "../fixtures", @path))
+        @path << '.xml'
+        compare_with_fixture(@path)
+      end
+    end
 
-        get @path
-        expect(last_response.body.strip).to eq expected_response.strip
+    describe '/smt' do
+      before do
+        @path << '/smt'
+      end
+
+      describe '.json' do
+        it 'should match a defined sample' do
+          @path << '.json'
+          compare_with_fixture(@path)
+        end
+      end
+
+      describe '.xml' do
+        it 'should match a defined sample' do
+          @path << '.xml'
+          compare_with_fixture(@path)
+        end
+      end
+    end
+
+    describe '/regionserver' do
+      before do
+        @path << '/regionserver'
+      end
+
+      describe '.json' do
+        it 'should match a defined sample' do
+          @path << '.json'
+          compare_with_fixture(@path)
+        end
+      end
+
+      describe '.xml' do
+        it 'should match a defined sample' do
+          @path << '.xml'
+          compare_with_fixture(@path)
+        end
+      end
+    end
+  end
+
+  describe '/images' do
+    before do
+      @path << '/images'
+    end
+
+    describe '.json' do
+      it 'should match a defined sample' do
+        @path << '.json'
+        compare_with_fixture(@path)
+      end
+    end
+
+    describe '.xml' do
+      it 'should match a defined sample' do
+        @path << '.xml'
+        compare_with_fixture(@path)
       end
     end
   end
