@@ -74,7 +74,9 @@ class PublicCloudInfoSrv < Sinatra::Base
   def responses_as_xml(category, responses)
     Nokogiri::XML::Builder.new { |xml|
       xml.send(category) {
-        xml.parent << responses
+        responses.each do |response|
+          xml.parent << response.clone
+        end
       }
     }.to_xml
   end
