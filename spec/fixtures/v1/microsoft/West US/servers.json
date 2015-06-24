@@ -1,0 +1,1 @@
+{"servers":[{"type":"smt","name":"smt-azure.susecloud.net","ip":"23.100.46.123","region":"West US"},{"type":"smt","name":"smt-azure.susecloud.net","ip":"23.101.192.253","region":"West US"},{"type":"regionserver","name":"","ip":"23.100.36.229","region":"West US"}]}

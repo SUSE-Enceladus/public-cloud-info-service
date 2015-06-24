@@ -135,6 +135,7 @@ describe 'response type' do
   end
 end
 
+# we comprehensively test every path here, for a given vendor
 describe 'response content: /v1/microsoft' do
   before do
     @path = '/v1/microsoft'
@@ -218,11 +219,11 @@ describe 'response content: /v1/microsoft' do
         compare_with_fixture(@path)
       end
     end
-    
+
     describe '/active' do
       before do
         @path << '/active'
-      end    
+      end
 
       describe '.json' do
         it 'should match a defined sample' do
@@ -238,12 +239,12 @@ describe 'response content: /v1/microsoft' do
         end
       end
     end
-    
+
     describe '/deprecated' do
       before do
         @path << '/deprecated'
-      end    
-    
+      end
+
       describe '.json' do
         it 'should match a defined sample' do
           @path << '.json'
@@ -258,12 +259,58 @@ describe 'response content: /v1/microsoft' do
         end
       end
     end
-    
+
     describe '/deleted' do
       before do
         @path << '/deleted'
-      end    
-    
+      end
+
+      describe '.json' do
+        it 'should match a defined sample' do
+          @path << '.json'
+          compare_with_fixture(@path)
+        end
+      end
+
+      describe '.xml' do
+        it 'should match a defined sample' do
+          @path << '.xml'
+          compare_with_fixture(@path)
+        end
+      end
+    end
+  end
+
+  describe '/West US' do
+    before do
+      @path << '/West US'
+    end
+
+    describe '/servers' do
+      before do
+        @path << '/servers'
+      end
+
+      describe '.json' do
+        it 'should match a defined sample' do
+          @path << '.json'
+          compare_with_fixture(@path)
+        end
+      end
+
+      describe '.xml' do
+        it 'should match a defined sample' do
+          @path << '.xml'
+          compare_with_fixture(@path)
+        end
+      end
+    end
+
+    describe '/images' do
+      before do
+        @path << '/images'
+      end
+
       describe '.json' do
         it 'should match a defined sample' do
           @path << '.json'
