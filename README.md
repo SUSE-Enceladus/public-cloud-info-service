@@ -1,8 +1,6 @@
 Public Cloud Info Service
 =========================
 
-[Trello Card](https://trello.com/c/ZljyZsnv)
-
 Customers may have their networks configured such that outgoing connections are not possible. However, they do want to allow access to our update servers. Therefore, customers are interested to get the IP addresses of our infrastructure servers to allow traffic to those systems.
 
 
@@ -12,7 +10,7 @@ Server Design
 API:
 
 ```
-https://publiccloudinfo.suse.com/VERSION/FRAMEWORK/TYPE/REGION/DATA-TYPE.FMT
+https://publiccloudinfo.suse.com/VERSION/FRAMEWORK/REGION/TYPE/DATA-TYPE.FMT
 ```
 
 Where
