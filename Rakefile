@@ -1,5 +1,7 @@
 require 'rspec/core/rake_task'
 require 'bundler'
+require 'net/http'
+require 'uri'
 
 task :default => ['specs']
 
@@ -69,6 +71,15 @@ namespace :obs do
     cp sources, "#{args.dest}/"
     rm tarball_filename
     puts "\nNext steps:\ncd #{args.dest}; osc build ..."
+  end
+end
+
+namespace :fixtures do
+  task :fetch, [:path] do |task, args|
+    url = "http://localhost:9292#{URI.encode args.path}"
+    File.open("spec/fixtures#{args.path}", "w") do |file|
+      file.write Net::HTTP.get_response(URI.parse(url)).body
+    end
   end
 end
 
