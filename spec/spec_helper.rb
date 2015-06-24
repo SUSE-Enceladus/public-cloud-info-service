@@ -19,10 +19,10 @@
 ENV['RACK_ENV'] = 'test'
 ENV['FRAMEWORKS'] = File.expand_path(File.join(File.dirname(__FILE__), "fixtures/frameworks.xml"))
 
-require_relative File.join('..', 'app.rb')
 require 'rspec'
 require 'rack/test'
 require 'uri'
+require_relative File.join('..', 'app.rb')
 
 RSpec.configure do |config|
   include Rack::Test::Methods

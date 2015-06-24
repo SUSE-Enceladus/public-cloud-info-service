@@ -19,6 +19,20 @@ require 'sinatra/base'
 require 'nokogiri'
 require 'json'
 
+class Nokogiri::XML::NodeSet
+  def in_region(region)
+    self.css("[region='#{region}']")
+  end
+
+  def of_type(server_type)
+    self.css("[type='#{server_type}']")
+  end
+
+  def in_state(image_state)
+    self.css("[state='#{image_state}']")
+  end
+end
+
 class PublicCloudInfoSrv < Sinatra::Base
   set :root, File.dirname(__FILE__)
 
@@ -76,26 +90,9 @@ class PublicCloudInfoSrv < Sinatra::Base
     settings.frameworks[provider].css("servers>server")
   end
 
-  def servers_of_type(provider, server_type)
-    settings.frameworks[provider].css("servers>server[type='#{server_type}']")
-  end
-
-  def servers_in_region(provider, region)
-    settings.frameworks[provider].css("servers>server[region='#{region}']")
-  end
-
   def images(provider)
     settings.frameworks[provider].css("images>image")
   end
-
-  def images_of_state(provider, image_state)
-    settings.frameworks[provider].css("images>image[state='#{image_state}']")
-  end
-
-  def images_in_region(provider, region)
-    settings.frameworks[provider].css("images>image[region='#{region}']")
-  end
-
 
   def responses_as_xml(category, responses)
     Nokogiri::XML::Builder.new { |xml|
@@ -140,12 +137,13 @@ class PublicCloudInfoSrv < Sinatra::Base
     respond_with params[:ext], params[:category], responses
   end
 
+
   get '/v1/:provider/servers/:server_type.?:ext?' do
     validate_params_ext
     validate_params_provider
     validate_params_server_type
 
-    responses = servers_of_type(params[:provider], params[:server_type])
+    responses = servers(params[:provider]).of_type(params[:server_type])
 
     respond_with params[:ext], :servers, responses
   end
@@ -155,7 +153,7 @@ class PublicCloudInfoSrv < Sinatra::Base
     validate_params_provider
     validate_params_image_state
 
-    responses = images_of_state(params[:provider], params[:image_state])
+    responses = images(params[:provider]).in_state(params[:image_state])
 
     respond_with params[:ext], :images, responses
   end
@@ -165,8 +163,7 @@ class PublicCloudInfoSrv < Sinatra::Base
     validate_params_category
     validate_params_provider
 
-    responses = send("#{params[:category]}_in_region", params[:provider],
-      params[:region])
+    responses = send("#{params[:category]}", params[:provider]).in_region(params[:region])
 
     respond_with params[:ext], params[:category], responses
   end
