@@ -72,17 +72,17 @@ class PublicCloudInfoSrv < Sinatra::Base
     settings.categories.include?(params[:category]) || halt(404)
   end
 
-  def validate_params_ext()
-    params[:ext] ||= 'json'
-    settings.extensions.include?(params[:ext]) || halt(400)
-  end
-
   def validate_params_server_type()
-    settings.server_types.include?(params[:server_type]) || halt(400)
+    settings.server_types.include?(params[:server_type]) || halt(404)
   end
 
   def validate_params_image_state()
-    settings.image_states.include?(params[:image_state]) || halt(400)
+    settings.image_states.include?(params[:image_state]) || halt(404)
+  end
+
+  def validate_params_ext()
+    params[:ext] ||= 'json'
+    settings.extensions.include?(params[:ext]) || halt(400)
   end
 
 

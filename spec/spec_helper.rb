@@ -32,9 +32,11 @@ RSpec.configure do |config|
   end
 end
 
-$valid_providers  = %w(amazon google hp microsoft)
-$valid_categories = %w(images servers)
-$valid_extensions = %w(json xml)
+$valid_providers    = %w(amazon google hp microsoft)
+$valid_categories   = %w(images servers)
+$valid_extensions   = %w(json xml)
+$valid_server_types = %w(smt regionserver)
+$valid_image_states = %w(active deprecated deleted)
 
 def compare_with_fixture(path)
   expected_response = IO.read(File.join(File.dirname(__FILE__), "fixtures", path))

@@ -83,6 +83,41 @@ describe 'route validation' do
     end
   end
 
+  describe 'server_type' do
+    describe 'valid types' do
+      it 'responds successfully' do
+        $valid_server_types.each do |server_type|
+          get "v1/#{$valid_providers.first}/servers/#{server_type}"
+        end
+      end
+    end
+
+    describe 'invalid type' do
+      it 'is 404 Not Found' do
+        get "v1/#{$valid_providers.first}/servers/foo"
+        expect(last_response.status).to eq 404
+      end
+    end
+  end
+
+  describe 'image_state' do
+    describe 'valid states' do
+      it 'responds successfully' do
+        $valid_image_states.each do |image_state|
+          get "v1/#{$valid_providers.first}/images/#{image_state}"
+        end
+      end
+    end
+
+    describe 'invalid state' do
+      it 'is 404 Not Found' do
+        get "v1/#{$valid_providers.first}/images/foo"
+        expect(last_response.status).to eq 404
+      end
+    end
+  end
+
+
   describe 'extention' do
     describe 'valid extentions' do
       it 'responds successfully' do
