@@ -22,6 +22,7 @@ ENV['FRAMEWORKS'] = File.expand_path(File.join(File.dirname(__FILE__), "fixtures
 require_relative File.join('..', 'app.rb')
 require 'rspec'
 require 'rack/test'
+require 'uri'
 
 RSpec.configure do |config|
   include Rack::Test::Methods
@@ -38,6 +39,6 @@ $valid_extensions = %w(json xml)
 def compare_with_fixture(path)
   expected_response = IO.read(File.join(File.dirname(__FILE__), "fixtures", path))
 
-  get path
+  get URI.encode(path)
   expect(last_response.body.strip).to eq expected_response.strip
 end
