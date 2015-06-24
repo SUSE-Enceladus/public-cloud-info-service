@@ -117,6 +117,24 @@ describe 'route validation' do
     end
   end
 
+  describe 'region' do
+    describe 'valid regions' do
+      it 'responds successfully' do
+        $valid_regions.each do |region|
+          get URI.encode(
+            "v1/#{$valid_providers.first}/#{region}/#{$valid_categories.first}"
+          )
+        end
+      end
+    end
+    
+    describe 'invalid region' do
+      it 'is 404 Not Found' do
+        get "v1/#{$valid_providers.first}/foo/#{$valid_categories.first}"
+        expect(last_response.status).to eq 404
+      end
+    end
+  end
 
   describe 'extention' do
     describe 'valid extentions' do

@@ -46,10 +46,20 @@ class PublicCloudInfoSrv < Sinatra::Base
       end
     ]
   end
+  
+  def self.collect_valid_regions(frameworks)
+    Hash[
+      frameworks.collect do |provider, framework|
+        regions = framework.css("server[region],image[region]").
+          collect{|n| n["region"] }.compact.uniq.sort
+        [ provider, regions ]
+      end
+    ]
+  end
 
   configure do
-    set :categories, %w(servers images)
-    set :extensions, %w(json xml)
+    set :categories,   %w(servers images)
+    set :extensions,   %w(json xml)
     set :server_types, %w(smt regionserver)
     set :image_states, %w(active deprecated deleted)
 
@@ -60,7 +70,8 @@ class PublicCloudInfoSrv < Sinatra::Base
       end
     end
     set :frameworks, frameworks
-    set :providers, frameworks.keys
+    set :providers,  frameworks.keys
+    set :regions,    collect_valid_regions(frameworks)
   end
 
 
@@ -78,6 +89,10 @@ class PublicCloudInfoSrv < Sinatra::Base
 
   def validate_params_image_state()
     settings.image_states.include?(params[:image_state]) || halt(404)
+  end
+
+  def validate_params_region()
+    settings.regions[params[:provider]].include?(params[:region]) || halt(404)
   end
 
   def validate_params_ext()
@@ -126,8 +141,9 @@ class PublicCloudInfoSrv < Sinatra::Base
 
   get '/v1/:provider/:region/servers/:server_type.?:ext?' do
     validate_params_ext
-    validate_params_provider
     validate_params_server_type
+    validate_params_region
+    validate_params_provider
 
     responses = servers(params[:provider]).of_type(params[:server_type]).in_region(params[:region])
 
@@ -136,8 +152,8 @@ class PublicCloudInfoSrv < Sinatra::Base
 
   get '/v1/:provider/servers/:server_type.?:ext?' do
     validate_params_ext
-    validate_params_provider
     validate_params_server_type
+    validate_params_provider
 
     responses = servers(params[:provider]).of_type(params[:server_type])
 
@@ -147,6 +163,7 @@ class PublicCloudInfoSrv < Sinatra::Base
   get '/v1/:provider/:region/images/:image_state.?:ext?' do
     validate_params_ext
     validate_params_image_state
+    validate_params_region
     validate_params_provider
 
     responses = images(params[:provider]).in_state(params[:image_state]).in_region(params[:region])
@@ -156,8 +173,8 @@ class PublicCloudInfoSrv < Sinatra::Base
 
   get '/v1/:provider/images/:image_state.?:ext?' do
     validate_params_ext
-    validate_params_provider
     validate_params_image_state
+    validate_params_provider
 
     responses = images(params[:provider]).in_state(params[:image_state])
 
@@ -167,6 +184,7 @@ class PublicCloudInfoSrv < Sinatra::Base
   get '/v1/:provider/:region/:category.?:ext?' do
     validate_params_ext
     validate_params_category
+    validate_params_region
     validate_params_provider
 
     responses = send("#{params[:category]}", params[:provider]).in_region(params[:region])
