@@ -123,9 +123,6 @@ class PublicCloudInfoSrv < Sinatra::Base
     end
   end
 
-  get '/' do
-    "SUSE Public Cloud Information Server"
-  end
 
   get '/v1/:provider/:region/servers/:server_type.?:ext?' do
     validate_params_ext
@@ -136,17 +133,6 @@ class PublicCloudInfoSrv < Sinatra::Base
 
     respond_with params[:ext], :servers, responses
   end
-
-  get '/v1/:provider/:category.?:ext?' do
-    validate_params_ext
-    validate_params_category
-    validate_params_provider
-
-    responses = send(params[:category], params[:provider])
-
-    respond_with params[:ext], params[:category], responses
-  end
-
 
   get '/v1/:provider/servers/:server_type.?:ext?' do
     validate_params_ext
@@ -186,6 +172,20 @@ class PublicCloudInfoSrv < Sinatra::Base
     responses = send("#{params[:category]}", params[:provider]).in_region(params[:region])
 
     respond_with params[:ext], params[:category], responses
+  end
+
+  get '/v1/:provider/:category.?:ext?' do
+    validate_params_ext
+    validate_params_category
+    validate_params_provider
+
+    responses = send(params[:category], params[:provider])
+
+    respond_with params[:ext], params[:category], responses
+  end
+
+  get '/' do
+    "SUSE Public Cloud Information Server"
   end
 
   get '/*' do
