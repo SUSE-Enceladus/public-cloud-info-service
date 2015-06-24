@@ -17,7 +17,7 @@
 #
 
 Name:      publicCloudInfo-server
-Version:   0.0.4
+Version:   0.0.5
 Release:   0
 License:   GPL-3.0
 Summary:   Server for a RESTful API to SUSE public cloud resources

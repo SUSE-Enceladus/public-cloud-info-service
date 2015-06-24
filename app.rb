@@ -37,6 +37,7 @@ class PublicCloudInfoSrv < Sinatra::Base
     set :categories, %w(servers images)
     set :extensions, %w(json xml)
     set :server_types, %w(smt regionserver)
+    set :image_states, %w(active deprecated deleted)
 
     frameworks = {}
     if ENV['FRAMEWORKS']
@@ -66,6 +67,10 @@ class PublicCloudInfoSrv < Sinatra::Base
     settings.server_types.include?(params[:server_type]) || halt(400)
   end
 
+  def validate_params_image_state()
+    settings.image_states.include?(params[:image_state]) || halt(400)
+  end
+  
 
   def servers(provider)
     settings.frameworks[provider].css("servers>server")
@@ -77,6 +82,10 @@ class PublicCloudInfoSrv < Sinatra::Base
 
   def images(provider)
     settings.frameworks[provider].css("images>image")
+  end
+  
+  def images_of_state(provider, image_state)
+    settings.frameworks[provider].css("images>image[state='#{image_state}']")
   end
 
 
@@ -131,6 +140,16 @@ class PublicCloudInfoSrv < Sinatra::Base
     responses = servers_of_type(params[:provider], params[:server_type])
 
     respond_with params[:ext], :servers, responses
+  end
+  
+  get '/v1/:provider/images/:image_state.?:ext?' do
+    validate_params_ext
+    validate_params_provider
+    validate_params_image_state
+    
+    responses = images_of_state(params[:provider], params[:image_state])
+
+    respond_with params[:ext], :images, responses       
   end
 
   get '/*' do
