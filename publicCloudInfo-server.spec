@@ -54,13 +54,13 @@ in the public cloud, including deprecation status.
 install -m 0755 -d %{buildroot}/srv/www/%{name}/public
 install -m 0644 app.rb config.ru %{buildroot}/srv/www/%{name}/
 install -m 0755 -d %{buildroot}/etc/apache2/vhosts.d/
-install -m 0644 publicCloudInfo-server.conf %{buildroot}/etc/apache2/vhosts.d/
+install -m 0644 publicCloudInfo-server.conf.template %{buildroot}/etc/apache2/vhosts.d/
 
 
 %files
 %defattr(-,root,root,-)
 %doc README.md LICENSE
-%config /etc/apache2/vhosts.d/publicCloudInfo-server.conf
+%config /etc/apache2/vhosts.d/publicCloudInfo-server.conf.template
 %defattr(-,wwwrun,www,-)
 /srv/www/%{name}
 %dir /etc/apache2

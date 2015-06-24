@@ -57,7 +57,7 @@ end
 namespace :obs do
   task :tar do |task|
     app = %w(app.rb config.ru)
-    configs = %w(publicCloudInfo-server.conf)
+    configs = %w(publicCloudInfo-server.conf.template)
     docs = %w(LICENSE README.md)
     mkdir name_version
     cp (app + configs + docs), "#{name_version}/"
