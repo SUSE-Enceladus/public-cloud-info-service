@@ -203,7 +203,7 @@ class PublicCloudInfoSrv < Sinatra::Base
   end
 
   get '/' do
-    "SUSE Public Cloud Information Server"
+    redirect "https://www.suse.com/solutions/public-cloud/", 301
   end
 
   get '/*' do
