@@ -304,6 +304,46 @@ describe 'response content: /v1/microsoft' do
           compare_with_fixture(@path)
         end
       end
+
+      describe '/smt' do
+        before do
+          @path << '/smt'
+        end
+
+        describe '.json' do
+          it 'should match a defined sample' do
+            @path << '.json'
+            compare_with_fixture(@path)
+          end
+        end
+
+        describe '.xml' do
+          it 'should match a defined sample' do
+            @path << '.xml'
+            compare_with_fixture(@path)
+          end
+        end
+      end
+
+      describe '/regionserver' do
+        before do
+          @path << '/regionserver'
+        end
+
+        describe '.json' do
+          it 'should match a defined sample' do
+            @path << '.json'
+            compare_with_fixture(@path)
+          end
+        end
+
+        describe '.xml' do
+          it 'should match a defined sample' do
+            @path << '.xml'
+            compare_with_fixture(@path)
+          end
+        end
+      end
     end
 
     describe '/images' do
@@ -322,6 +362,66 @@ describe 'response content: /v1/microsoft' do
         it 'should match a defined sample' do
           @path << '.xml'
           compare_with_fixture(@path)
+        end
+      end
+
+      describe '/active' do
+        before do
+          @path << '/active'
+        end
+
+        describe '.json' do
+          it 'should match a defined sample' do
+            @path << '.json'
+            compare_with_fixture(@path)
+          end
+        end
+
+        describe '.xml' do
+          it 'should match a defined sample' do
+            @path << '.xml'
+            compare_with_fixture(@path)
+          end
+        end
+      end
+
+      describe '/deprecated' do
+        before do
+          @path << '/deprecated'
+        end
+
+        describe '.json' do
+          it 'should match a defined sample' do
+            @path << '.json'
+            compare_with_fixture(@path)
+          end
+        end
+
+        describe '.xml' do
+          it 'should match a defined sample' do
+            @path << '.xml'
+            compare_with_fixture(@path)
+          end
+        end
+      end
+
+      describe '/deleted' do
+        before do
+          @path << '/deleted'
+        end
+
+        describe '.json' do
+          it 'should match a defined sample' do
+            @path << '.json'
+            compare_with_fixture(@path)
+          end
+        end
+
+        describe '.xml' do
+          it 'should match a defined sample' do
+            @path << '.xml'
+            compare_with_fixture(@path)
+          end
         end
       end
     end

@@ -127,6 +127,16 @@ class PublicCloudInfoSrv < Sinatra::Base
     "SUSE Public Cloud Information Server"
   end
 
+  get '/v1/:provider/:region/servers/:server_type.?:ext?' do
+    validate_params_ext
+    validate_params_provider
+    validate_params_server_type
+
+    responses = servers(params[:provider]).of_type(params[:server_type]).in_region(params[:region])
+
+    respond_with params[:ext], :servers, responses
+  end
+
   get '/v1/:provider/:category.?:ext?' do
     validate_params_ext
     validate_params_category
@@ -146,6 +156,16 @@ class PublicCloudInfoSrv < Sinatra::Base
     responses = servers(params[:provider]).of_type(params[:server_type])
 
     respond_with params[:ext], :servers, responses
+  end
+
+  get '/v1/:provider/:region/images/:image_state.?:ext?' do
+    validate_params_ext
+    validate_params_image_state
+    validate_params_provider
+
+    responses = images(params[:provider]).in_state(params[:image_state]).in_region(params[:region])
+
+    respond_with params[:ext], :images, responses
   end
 
   get '/v1/:provider/images/:image_state.?:ext?' do
