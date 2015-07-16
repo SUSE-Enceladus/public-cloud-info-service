@@ -7,30 +7,38 @@ Customers may have their networks configured such that outgoing connections are 
 Server Design
 -------------
 
+All requests must be made via HTTPS. SSL certificate validation is recommended.
+HTTP requests will receive a `302 REDIRECT` to an equivalent HTTPS URL.
+
 API:
 
 ```
-https://publiccloudinfo.suse.com/VERSION/FRAMEWORK/REGION/TYPE/DATA-TYPE.FMT
+https://susepubliccloudinfo.suse.com/VERSION/FRAMEWORK/REGION/TYPE/DATA-TYPE.FMT
 ```
 
 Where
 
+VERSION is:
+
+`v1` for the API documented here.
+
 FRAMEWORK is one of:
 
-amazon, google, hp, microsoft
+`amazon`, `google`, `hp` or `microsoft`
+
+REGION is optional, one of the known regions in the cloud framework. Use the 
+region identifiers as the provider describes them, for example "us-east-1" in 
+Amazon EC2, or "East US 2" in Microsoft Azure.
 
 TYPE is one of:
 
-servers, images
-
-REGION is optional, one of the known regions in the cloud framework, us-east-1
-in Amazon for example
+`servers` or `images`
 
 DATA-TYPE is one of
 
-smt, regionserver for the servers type
+`smt` or `regionserver` for the servers type
 
-current, deprecated, deleted for the images type
+`active`, `deprecated` or `deleted` for the images type
 
 
 Design decisions for the API
@@ -43,20 +51,27 @@ all information at that level.
 
 For example:
 
-https://susecloudinfo.suse.com/v1/microsoft/servers/us-east/smt.json
-
+```
+https://susecloudinfo.suse.com/v1/microsoft/West%20US/servers/smt.json
+```
 Will return information about all of our SMT servers running in this region in
 Azure in JSON format
 
-https://susecloudinfo.suse.com/v1/amazon/servers/smt.xml
-
-Will return information about all SMT servers in Amazon in all regions in XML
+```
+https://susepubliccloudinfo/v1/amazon/servers/regionserver.xml
+```
+Will return information about all Region servers in Amazon in all regions in XML
 format.
 
-https://susecloudinfo.suse.com/v1/google/images/deprecated.xml
-
+```
+https://susepubliccloudinfo/v1/google/images/deprecated.xml
+```
 Will return information about all deprecated images in Google Compute Engine.
 
+```
+https://susepubliccloudinfo.suse.com/v1/hp/images/active.json
+```
+Will return information about all active images in HP Helion.
 
 Service implementation
 ----------------------
