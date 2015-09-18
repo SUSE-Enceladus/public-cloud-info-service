@@ -17,7 +17,7 @@
 #
 
 Name:      publicCloudInfo-server
-Version:   1.0.1
+Version:   2.0.0
 Release:   0
 License:   GPL-3.0
 Summary:   Server for a RESTful API to SUSE public cloud resources
@@ -28,7 +28,7 @@ BuildRequires:  ruby-macros >= 5
 Requires:  %{ruby}
 Requires:  %{rubygem nokogiri}
 Requires:  %{rubygem sinatra}
-Requires:  rubygem-passenger-apache2
+Requires:  %{rubygem puma}
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 BuildArch: noarch
 
@@ -52,19 +52,17 @@ in the public cloud, including deprecation status.
 
 %install
 install -m 0755 -d %{buildroot}/srv/www/%{name}/public
+install -m 0755 -d %{buildroot}/srv/www/%{name}/config
 install -m 0644 app.rb config.ru %{buildroot}/srv/www/%{name}/
-install -m 0755 -d %{buildroot}/etc/apache2/vhosts.d/
-install -m 0644 publicCloudInfo-server.conf.template %{buildroot}/etc/apache2/vhosts.d/
+install -m 0644 config/puma.rb %{buildroot}/srv/www/%{name}/config/
 
 
 %files
 %defattr(-,root,root,-)
 %doc README.md LICENSE
-%config /etc/apache2/vhosts.d/publicCloudInfo-server.conf.template
+%config /srv/www/%{name}/config/puma.rb
 %defattr(-,wwwrun,www,-)
 /srv/www/%{name}
-%dir /etc/apache2
-%dir /etc/apache2/vhosts.d
 
 
 %changelog
