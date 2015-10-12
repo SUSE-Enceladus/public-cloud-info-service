@@ -38,7 +38,7 @@ namespace :gems do
     filenames.each do |filename|
       puts "#{filename}:"
       gemspecs(filename).each do |gemspec|
-        puts "\truby#{ruby_version}-rubygem-#{gemspec}"
+        puts "\truby#{ruby_version}-rubygem-#{gemspec.name}"
       end
     end
   end
@@ -57,12 +57,10 @@ end
 namespace :obs do
   task :tar do |task|
     app = %w(app.rb config.ru)
-    configs = %w(config/puma.rb)
+    configs = %w(publicCloudInfo-server.conf.template)
     docs = %w(LICENSE README.md)
     mkdir name_version
-    mkdir "#{name_version}/config"
-    cp (app + docs), "#{name_version}/"
-    cp configs, "#{name_version}/config/"
+    cp (app + configs + docs), "#{name_version}/"
     system "tar cjvf #{tarball_filename} #{name_version}"
     rm_rf name_version
     system "ls -la #{tarball_filename}"
