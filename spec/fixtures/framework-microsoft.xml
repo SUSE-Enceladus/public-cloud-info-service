@@ -1,9 +1,12 @@
 <?xml version="1.0"?>
 <framework name="microsoft">
   <servers>
-    <server type="smt" name="smt-azure.susecloud.net" ip="23.100.46.123" region="West US"/>
-    <server type="smt" name="smt-azure.susecloud.net" ip="23.101.192.253" region="West US"/>
-    <server type="regionserver" name="" ip="23.100.36.229" region="West US"/>
+    <server type="smt-sles" name="smt-azure.susecloud.net" ip="23.100.46.123" region="West US"/>
+    <server type="smt-sles" name="smt-azure.susecloud.net" ip="23.101.192.253" region="West US"/>
+    <server type="smt-sap" name="smt-azure.susecloud.net" ip="40.112.248.207" region="West US"/>
+    <server type="smt-sap" name="smt-azure.susecloud.net" ip="13.93.211.154" region="West US"/>
+    <server type="regionserver-sles" name="" ip="23.100.36.229" region="West US"/>
+    <server type="regionserver-sap" name="" ip="23.100.36.230" region="West US"/>
   </servers>
   <images>
     <image name="suse-sles-11-sp3-v20150127" id="" state="active" replacementid="" replacementname="" publishedon="2015-01-27" deprecatedon="" deletedon="" region="West US"/>
@@ -11,6 +14,6 @@
     <image name="suse-sles-11-sp3-20140101-x86-64" id="" state="deleted" replacementid="" replacementname="suse-sles-11-sp3-20140701-x86-64" publishedon="2014-01-01" deprecatedon="2014-07-01" deletedon="2015-01-01" region="West US"/>
     <image name="suse-sles-11-sp3-v20150127" id="" state="active" replacementid="" replacementname="" publishedon="2015-01-27" deprecatedon="" deletedon="" region="Australia East"/>
     <image name="suse-sles-11-sp3-20140701-x86-64" id="" state="deprecated" replacementid="" replacementname="suse-sles-11-sp3-v20150127" publishedon="2014-07-01" deprecatedon="2015-01-27" deletedon="" region="Australia East"/>
-    <image name="suse-sles-11-sp3-20140101-x86-64" id="" state="deleted" replacementid="" replacementname="suse-sles-11-sp3-20140701-x86-64" publishedon="2014-01-01" deprecatedon="2014-07-01" deletedon="2015-01-01" region="Australia East"/>  
+    <image name="suse-sles-11-sp3-20140101-x86-64" id="" state="deleted" replacementid="" replacementname="suse-sles-11-sp3-20140701-x86-64" publishedon="2014-01-01" deprecatedon="2014-07-01" deletedon="2015-01-01" region="Australia East"/>
   </images>
 </framework>
