@@ -25,7 +25,7 @@ class Nokogiri::XML::NodeSet
   end
 
   def of_type(server_type)
-    self.css("[type='#{server_type}']")
+    self.css("[type|='#{server_type}']")
   end
 
   def in_state(image_state)
@@ -46,7 +46,7 @@ class PublicCloudInfoSrv < Sinatra::Base
       end
     ]
   end
-  
+
   def self.collect_valid_regions(frameworks)
     Hash[
       frameworks.collect do |provider, framework|
