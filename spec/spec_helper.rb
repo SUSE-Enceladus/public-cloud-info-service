@@ -41,7 +41,11 @@ $valid_regions      = ["West US", "Australia East"]
 
 def compare_with_fixture(path)
   expected_response = IO.read(File.join(File.dirname(__FILE__), "fixtures", path))
-
   get URI.encode(path)
+  unless last_response.body.strip == expected_response.strip
+    puts "\nPath:\n#{path}"
+    puts "Response:\n#{last_response.body.strip}"
+    puts "Fixture:\n#{expected_response.strip}\n"
+  end
   expect(last_response.body.strip).to eq expected_response.strip
 end
