@@ -4,8 +4,6 @@
   </framework>
   <framework name="google">
   </framework>
-  <framework name="hp">
-  </framework>
   <framework name="microsoft">
     <servers>
         <server type="smt-sles" name="smt-azure.susecloud.net" ip="23.100.46.123" region="West US"/>
