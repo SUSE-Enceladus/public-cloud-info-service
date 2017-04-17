@@ -1,9 +1,9 @@
 Public Cloud Info Service
 =========================
 
-Customers may have their networks configured such that outgoing connections are 
-not possible. However, they do want to allow access to our update servers. 
-Therefore, customers are interested to get the IP addresses of our 
+Customers may have their networks configured such that outgoing connections are
+not possible. However, they do want to allow access to our update servers.
+Therefore, customers are interested to get the IP addresses of our
 infrastructure servers to allow traffic to those systems.
 
 
@@ -29,8 +29,8 @@ FRAMEWORK is one of:
 
 `amazon`, `google`, `hp` or `microsoft`
 
-REGION is optional, one of the known regions in the cloud framework. Use the 
-region identifiers as the provider describes them, for example "us-east-1" in 
+REGION is optional, one of the known regions in the cloud framework. Use the
+region identifiers as the provider describes them, for example "us-east-1" in
 Amazon EC2, or "East US 2" in Microsoft Azure.
 
 TYPE is one of:
@@ -111,6 +111,5 @@ The information service will return properly formatted XML or JSON data.
 Client Implementation
 ---------------------
 
-We will implement a client in Python based on the same ideas used in
-ec2metadata and gcemetadata clients. The client will eventually be included in
-our guest images.
+`pint`, our Python-based client, is available in the Public Cloud Module, or in
+the Cloud:Tools project in OBS, as `python-susepubliccloudinfo`.

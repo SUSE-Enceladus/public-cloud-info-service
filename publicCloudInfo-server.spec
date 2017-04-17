@@ -17,7 +17,7 @@
 #
 
 Name:      publicCloudInfo-server
-Version:   1.0.1
+Version:   1.1.0
 Release:   0
 License:   GPL-3.0
 Summary:   Server for a RESTful API to SUSE public cloud resources
@@ -68,4 +68,3 @@ install -m 0644 publicCloudInfo-server.conf.template %{buildroot}/etc/apache2/vh
 
 
 %changelog
-
