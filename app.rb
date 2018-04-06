@@ -20,6 +20,10 @@ require 'nokogiri'
 require 'json'
 
 class Nokogiri::XML::NodeSet
+  def in_env(environment)
+    self.css("[environment='#{environment}']")
+  end
+
   def in_region(region)
     self.css("[region='#{region}']")
   end
@@ -30,6 +34,20 @@ class Nokogiri::XML::NodeSet
 
   def in_state(image_state)
     self.css("[state='#{image_state}']")
+  end
+
+  def set_region(region)
+    self.each do |node|
+      node.set_attribute('region', region)
+    end
+    return self
+  end
+
+  def clear_region()
+    self.each do |node|
+      node.remove_attribute('region')
+    end
+    return self
   end
 end
 
@@ -49,9 +67,11 @@ class PublicCloudInfoSrv < Sinatra::Base
 
   def self.collect_valid_regions(frameworks)
     Hash[
-      frameworks.collect do |provider, framework|
-        regions = framework.css("server[region],image[region]").
-          collect{|n| n["region"] }.compact.uniq.sort
+      frameworks.map do |provider, framework|
+        regions = [
+          framework.css("server[region],image[region]").map{ |n| n["region"] },
+          framework.css("region[name]").map{ |n| n["name"] }
+        ].flatten.compact.uniq.sort!
         [ provider, regions ]
       end
     ]
@@ -107,6 +127,23 @@ class PublicCloudInfoSrv < Sinatra::Base
 
   def images(provider)
     settings.frameworks[provider].css("images>image")
+  end
+
+  def remap_region_to_environment(provider, region)
+    # if the framework uses environments
+    framework = settings.frameworks[provider]
+    regions_in_env = framework.css("environment>region[name='#{region}']")
+    if regions_in_env.empty?
+      return region
+    else
+      environment = regions_in_env.first.parent
+      return environment["name"]
+    end
+  end
+
+  def has_environments?(provider)
+    framework = settings.frameworks[provider]
+    return !framework.css('environments').empty?
   end
 
   def responses_as_xml(category, responses)
@@ -166,8 +203,12 @@ class PublicCloudInfoSrv < Sinatra::Base
     validate_params_region
     validate_params_provider
 
-    responses = images(params[:provider]).in_state(params[:image_state]).in_region(params[:region])
-
+    responses = if (has_environments?(params[:provider]) && params[:category] == 'images')
+      environment = remap_region_to_environment(params[:provider], params[:region])
+      images(params[:provider]).in_state(params[:image_state]).in_env(environment).set_region(params[:region])
+    else
+      images(params[:provider]).in_state(params[:image_state]).in_region(params[:region])
+    end
     respond_with params[:ext], :images, responses
   end
 
@@ -176,7 +217,7 @@ class PublicCloudInfoSrv < Sinatra::Base
     validate_params_image_state
     validate_params_provider
 
-    responses = images(params[:provider]).in_state(params[:image_state])
+    responses = images(params[:provider]).in_state(params[:image_state]).clear_region
 
     respond_with params[:ext], :images, responses
   end
@@ -187,7 +228,12 @@ class PublicCloudInfoSrv < Sinatra::Base
     validate_params_region
     validate_params_provider
 
-    responses = send("#{params[:category]}", params[:provider]).in_region(params[:region])
+    responses = if (has_environments?(params[:provider]) && params[:category] == 'images')
+      environment = remap_region_to_environment(params[:provider], params[:region])
+      send("#{params[:category]}", params[:provider]).in_env(environment).set_region(params[:region])
+    else
+      send("#{params[:category]}", params[:provider]).in_region(params[:region])
+    end
 
     respond_with params[:ext], params[:category], responses
   end
@@ -198,7 +244,9 @@ class PublicCloudInfoSrv < Sinatra::Base
     validate_params_provider
 
     responses = send(params[:category], params[:provider])
-
+    if params[:category] == 'images' && has_environments?(params[:provider])
+      responses.clear_region
+    end
     respond_with params[:ext], params[:category], responses
   end
 
