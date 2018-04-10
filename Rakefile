@@ -2,6 +2,7 @@ require 'rspec/core/rake_task'
 require 'bundler'
 require 'net/http'
 require 'uri'
+require 'fileutils'
 
 task :default => ['specs']
 
@@ -17,7 +18,7 @@ namespace :gems do
       rm Dir.glob("Gemfile.*.lock")
     end
   end
-  
+
   task :lock, [:env] => [:unlock] do |task, args|
     if args.env
       system "bundle install --local --gemfile=Gemfile.#{args.env}"
@@ -42,7 +43,7 @@ namespace :gems do
       end
     end
   end
-  
+
   namespace :rpmspec do
     task :requires do |task|
       puts "BuildRequires:  ruby-macros >= 5"
@@ -65,7 +66,7 @@ namespace :obs do
     rm_rf name_version
     system "ls -la #{tarball_filename}"
   end
-  
+
   task :cp, [:dest] => [:tar] do |task, args|
     sources = [tarball_filename, Dir.glob("*.spec")].flatten
     cp sources, "#{args.dest}/"
@@ -77,6 +78,7 @@ end
 namespace :fixtures do
   task :fetch, [:path] do |task, args|
     url = "http://localhost:9292#{URI.encode args.path}"
+    FileUtils.mkdir_p("spec/fixtures" + args.path.split('/')[0..-2].join('/'))
     File.open("spec/fixtures#{args.path}", "w") do |file|
       file.write Net::HTTP.get_response(URI.parse(url)).body
     end
