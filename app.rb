@@ -203,7 +203,7 @@ class PublicCloudInfoSrv < Sinatra::Base
     validate_params_region
     validate_params_provider
 
-    responses = if (has_environments?(params[:provider]) && params[:category] == 'images')
+    responses = if has_environments?(params[:provider])
       environment = remap_region_to_environment(params[:provider], params[:region])
       images(params[:provider]).in_state(params[:image_state]).in_env(environment).set_region(params[:region])
     else
@@ -217,7 +217,10 @@ class PublicCloudInfoSrv < Sinatra::Base
     validate_params_image_state
     validate_params_provider
 
-    responses = images(params[:provider]).in_state(params[:image_state]).clear_region
+    responses = images(params[:provider]).in_state(params[:image_state])
+    if has_environments?(params[:provider])
+      responses.clear_region
+    end
 
     respond_with params[:ext], :images, responses
   end

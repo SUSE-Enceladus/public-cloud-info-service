@@ -127,7 +127,7 @@ describe 'route validation' do
         end
       end
     end
-    
+
     describe 'invalid region' do
       it 'is 404 Not Found' do
         get "v1/#{$valid_providers.first}/foo/#{$valid_categories.first}"
@@ -188,8 +188,18 @@ describe 'response type' do
   end
 end
 
+describe 'regioned images' do
+  before do
+    @path = '/v1/amazon/images.xml'
+  end
+
+  it 'should return the regioned images' do
+    compare_with_fixture(@path)
+  end
+end
+
 # we comprehensively test every path here, for a given vendor
-describe 'response content: /v1/microsoft' do
+describe 'environmented images: /v1/microsoft' do
   before do
     @path = '/v1/microsoft'
   end
