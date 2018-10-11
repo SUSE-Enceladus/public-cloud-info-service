@@ -1,11 +1,11 @@
 Public Cloud Info Service
 =========================
 
-Customers may have their networks configured such that outgoing connections are
-not possible. However, they do want to allow access to our update servers.
-Therefore, customers are interested to get the IP addresses of our
-infrastructure servers to allow traffic to those systems.
+Provides a list of servers hosted in a cloud framework, for properly limiting
+network egress.
 
+Provides information about published images in cloud frameworks, including
+lifecycle (active/deprecated/deleted) states.
 
 Server Design
 -------------
@@ -55,19 +55,19 @@ all information at that level.
 For example:
 
 ```
-https://susecloudinfo.suse.com/v1/microsoft/West%20US/servers/smt.json
+https://susepubliccloudinfo.suse.com/v1/microsoft/West%20US/servers/smt.json
 ```
 Will return information about all of our SMT servers running in this region in
 Azure in JSON format
 
 ```
-https://susepubliccloudinfo/v1/amazon/servers/regionserver.xml
+https://susepubliccloudinfo.suse.com/v1/amazon/servers/regionserver.xml
 ```
 Will return information about all Region servers in Amazon in all regions in XML
 format.
 
 ```
-https://susepubliccloudinfo/v1/google/images/deprecated.xml
+https://susepubliccloudinfo.suse.com/v1/google/images/deprecated.xml
 ```
 Will return information about all deprecated images in Google Compute Engine.
 
