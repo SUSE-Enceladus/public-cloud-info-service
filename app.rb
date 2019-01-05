@@ -81,7 +81,7 @@ class PublicCloudInfoSrv < Sinatra::Base
     set :categories,   %w(servers images)
     set :extensions,   %w(json xml)
     set :server_types, %w(smt regionserver)
-    set :image_states, %w(active deprecated deleted)
+    set :image_states, %w(active inactive deprecated deleted)
 
     frameworks = {}
     if ENV['FRAMEWORKS']

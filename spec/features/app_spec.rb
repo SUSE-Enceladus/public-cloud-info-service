@@ -303,6 +303,26 @@ describe 'environmented images: /v1/microsoft' do
       end
     end
 
+    describe '/inactive' do
+      before do
+        @path << '/inactive'
+      end
+
+      describe '.json' do
+        it 'should match a defined sample' do
+          @path << '.json'
+          compare_with_fixture(@path)
+        end
+      end
+
+      describe '.xml' do
+        it 'should match a defined sample' do
+          @path << '.xml'
+          compare_with_fixture(@path)
+        end
+      end
+    end
+
     describe '/deprecated' do
       before do
         @path << '/deprecated'
