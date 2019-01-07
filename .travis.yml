@@ -1,7 +1,6 @@
 language: ruby
 cache: bundler
 rvm:
-  - 2.1.9 # SLE12
   - 2.5.0 # SLE15
 branches:
   only:
