@@ -1,0 +1,14 @@
+language: ruby
+cache: bundler
+rvm:
+  - 2.1.9 # SLE12
+  - 2.5.0 # SLE15
+branches:
+  only:
+    - master
+before_install:
+  - "echo 'gem: --no-ri --no-rdoc' > ~/.gemrc"
+script:
+  - "bundle exec rspec"
+matrix:
+  fast_finish: true
