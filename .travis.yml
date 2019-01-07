@@ -8,7 +8,8 @@ branches:
     - master
 before_install:
   - "echo 'gem: --no-ri --no-rdoc' > ~/.gemrc"
+  - "gem install bundler"
 script:
-  - "bundle exec rspec"
+  - "bundle exec rspec --format documentation --warnings"
 matrix:
   fast_finish: true
