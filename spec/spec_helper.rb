@@ -36,7 +36,7 @@ $valid_providers    = %w(amazon google microsoft)
 $valid_categories   = %w(images servers)
 $valid_extensions   = %w(json xml)
 $valid_server_types = %w(smt regionserver)
-$valid_image_states = %w(active deprecated deleted)
+$valid_image_states = %w(active inactive deprecated deleted)
 $valid_regions      = ["West US", "Australia East"]
 
 def compare_with_fixture(path)

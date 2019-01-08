@@ -5,7 +5,7 @@ Provides a list of servers hosted in a cloud framework, for properly limiting
 network egress.
 
 Provides information about published images in cloud frameworks, including
-lifecycle (active/deprecated/deleted) states.
+lifecycle (active/inactive/deprecated/deleted) states.
 
 Server Design
 -------------
@@ -41,7 +41,7 @@ DATA-TYPE is one of
 
 `smt` or `regionserver` for the servers type
 
-`active`, `deprecated` or `deleted` for the images type
+`active`, `inactive`, `deprecated` or `deleted` for the images type
 
 
 Design decisions for the API

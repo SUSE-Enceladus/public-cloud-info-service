@@ -36,6 +36,7 @@
       <image name="suse-sles-11-sp3-20140101-x86-64" id="" state="deleted" replacementid="" replacementname="suse-sles-11-sp3-20140701-x86-64" publishedon="2014-01-01" deprecatedon="2014-07-01" deletedon="2015-01-01" environment="PublicAzure"/>
       <image name="suse-sles-11-sp3-v20150127" id="" state="active" replacementid="" replacementname="" publishedon="2015-01-27" deprecatedon="" deletedon="" environment="Mooncake"/>
       <image name="suse-sles-11-sp3-20140701-x86-64" id="" state="deprecated" replacementid="" replacementname="suse-sles-11-sp3-v20150127" publishedon="2014-07-01" deprecatedon="2015-01-27" deletedon="" environment="Mooncake"/>
+      <image name="b4590d9e3ed742e4a1d46e5424aa335e__suse-sles-12-sp3-byos-v20180815" state="inactive" environment="PublicAzure" replacementname="" publishedon="20180815" deprecatedon="" deletedon="" urn="SUSE:SLES-BYOS:12-SP3:2018.08.15"/>
     </images>
   </framework>
 </frameworks>
