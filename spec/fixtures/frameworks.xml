@@ -39,4 +39,19 @@
       <image name="b4590d9e3ed742e4a1d46e5424aa335e__suse-sles-12-sp3-byos-v20180815" state="inactive" environment="PublicAzure" replacementname="" publishedon="20180815" deprecatedon="" deletedon="" urn="SUSE:SLES-BYOS:12-SP3:2018.08.15"/>
     </images>
   </framework>
+  <framework name="oracle">
+    <servers/>
+    <images>
+      <!-- SLES 12 -->
+      <image name="sles-12-sp4-byos-v20190628" state="active" replacementname="" publishedon="20190712" deprecatedon="" deletedon=""/>
+      <!-- SLES 12 4 SAP -->
+      <image name="sles-12-sp4-sap-byos-v20190628" state="active" replacementname="" publishedon="20190712" deprecatedon="" deletedon=""/>
+      <!-- SLES 15 -->
+      <image name="sles-15-byos-v20190628" state="inactive" replacementname="" publishedon="20190712" deprecatedon="" deletedon=""/>
+      <image name="sles-15-sp1-byos-v20190628" state="active" replacementname="" publishedon="20190712" deprecatedon="" deletedon=""/>
+      <!-- SLES 15 4 SAP -->
+      <image name="sles-15-sap-byos-v20190628" state="inactive" replacementname="" publishedon="20190712" deprecatedon="" deletedon=""/>
+      <image name="sles-15-sp1-sap-byos-v20190628" state="active" replacementname="" publishedon="20190712" deprecatedon="" deletedon=""/>
+    </images>
+  </framework>
 </frameworks>
