@@ -1,0 +1,107 @@
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jsviews/1.0.5/jsviews.min.js"></script>
+  <script src="https://www.jsviews.com/download/jsrender.min.js"></script>
+  <script src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.10.20/css/jquery.dataTables.min.css"/>
+</head>
+<body>
+  <div id="result">
+  </div>
+
+  <script id="theTmpl" type="text/x-jsrender">
+  <select id="state">
+    <option value="" default>All states</option>
+    {{for states sort=true}}
+      <option value="{{:}}">{{:}}</option>
+    {{/for}}
+  </select>
+  
+  <select id="region">
+    <option value="" default>All regions</option>
+    {{for regions sort=true}}
+      <option value="{{:}}">{{:}}</option>
+    {{/for}}
+  </select>
+  
+  <table id="coolTable" class="display">
+    <thead>
+    {{for attributes}}
+      <th>{{:}}</th>
+    {{/for}}
+    </thead>
+    <tbody>
+    {{for images ~attributes=attributes}}
+      <tr class="odd">
+      {{for ~attributes ~imgData=#data}}
+        <td>{{:~imgData[#data]}}</td>
+      {{/for}}
+      </tr>
+    {{/for}}
+    </tbody>
+  </table>
+  </script>
+    
+  <script>
+  var images = [];
+  var attributes = {};
+  var regions = {};
+  var states = {};
+  
+  var regionIdx;
+  var stateIdx;
+
+  jQuery.fn.dataTableExt.afnFiltering.push(
+    function( oSettings, aData, iDataIdx ) {
+      var state = $('#state').val();
+      var region = $('#region').val();
+      
+      var result = true;
+      if (region) result = result && aData[regionIdx] == region;
+      if (state) result = result && aData[stateIdx] == state;
+      
+      return result;
+    }
+  );
+  
+  $(document).ready(function(){
+    $.get('/amazon.xml', function(xmlData) {
+      $(xmlData).find('image').each(function(idx, imgItem){
+        var image = {};
+        $(imgItem.attributes).each(function(idx, imgItem){
+          image[imgItem.name] = imgItem.value;
+          attributes[imgItem.name] = true;
+          
+          if (imgItem.name == 'region') regions[imgItem.value] = true;
+          if (imgItem.name == 'state') states[imgItem.value] = true;
+        });
+        images.push(image);
+      });
+      
+      var attrKeys = Object.keys(attributes);
+      regionIdx = attrKeys.indexOf('region');
+      stateIdx = attrKeys.indexOf('state');
+      
+      
+      var template = $.templates("#theTmpl");
+      template.link(
+        "#result", {
+          'attributes': Object.keys(attributes),
+          'regions': Object.keys(regions),
+          'states': Object.keys(states),
+          'images': images
+        });
+      
+      var dataTable = $('#coolTable').DataTable();
+      $('#state, #region').change(function() {
+        console.log("Fire!");
+        dataTable.draw();
+      });
+    });
+  
+  });
+  </script>
+</body>
+</html>
