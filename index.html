@@ -8,24 +8,31 @@
   <link rel="stylesheet" href="https://cdn.datatables.net/1.10.20/css/jquery.dataTables.min.css"/>
 </head>
 <body>
+  <select id="csp">
+
+  </select>
   <div id="result">
   </div>
 
   <script id="theTmpl" type="text/x-jsrender">
+
+
   <select id="state">
     <option value="" default>All states</option>
     {{for states sort=true}}
       <option value="{{:}}">{{:}}</option>
     {{/for}}
   </select>
-  
-  <select id="region">
-    <option value="" default>All regions</option>
-    {{for regions sort=true}}
+
+      {{if regions.length > 0}} <!-- some CSP may have not regions -->
+      <select id="region">
+      <option value="" default>All regions</option>
+      {{for regions sort=true}}
       <option value="{{:}}">{{:}}</option>
-    {{/for}}
+      {{/for}}
   </select>
-  
+	{{/if}}
+
   <table id="coolTable" class="display">
     <thead>
     {{for attributes}}
@@ -43,63 +50,95 @@
     </tbody>
   </table>
   </script>
-    
+
   <script>
   var images = [];
   var attributes = {};
   var regions = {};
   var states = {};
-  
-  var regionIdx;
-  var stateIdx;
+
+  var regionIdx = {};
+    var stateIdx = {};
+    var cspFiles= '';
 
   jQuery.fn.dataTableExt.afnFiltering.push(
     function( oSettings, aData, iDataIdx ) {
       var state = $('#state').val();
       var region = $('#region').val();
-      
+      var current_csp = $('#csp').val();
+
       var result = true;
+
       if (region) result = result && aData[regionIdx] == region;
       if (state) result = result && aData[stateIdx] == state;
-      
+
       return result;
     }
   );
-  
-  $(document).ready(function(){
-    $.get('/amazon.xml', function(xmlData) {
-      $(xmlData).find('image').each(function(idx, imgItem){
-        var image = {};
-        $(imgItem.attributes).each(function(idx, imgItem){
-          image[imgItem.name] = imgItem.value;
-          attributes[imgItem.name] = true;
-          
-          if (imgItem.name == 'region') regions[imgItem.value] = true;
-          if (imgItem.name == 'state') states[imgItem.value] = true;
-        });
-        images.push(image);
+
+    var csps = {aws: '/amazon.xml', azure: '/microsoft.xml', gcp: '/google.xml'}
+
+    function set_values_csp(csp) {
+      images = [];
+      attributes = {};
+      regions = {};
+      states = {};
+
+      regionIdx = {};
+      stateIdx = {};
+
+      $.get(csps[csp], function(xmlData) {
+	var region = ''
+	$(xmlData).find('image').each(function(idx, imgItem){
+	  var image = {};
+	  $(imgItem.attributes).each(function(idx, imgItem){
+            image[imgItem.name] = imgItem.value;
+            attributes[imgItem.name] = true;
+            if (imgItem.name == 'region' || imgItem.name == 'environment') {
+	      regions[imgItem.value] = true;
+	      region = imgItem.name;
+	    }
+
+            if (imgItem.name == 'state') states[imgItem.value] = true;
+	  });
+	  images.push(image);
+	});
+
+	var attrKeys = Object.keys(attributes);
+
+	regionIdx = attrKeys.indexOf(region);
+	stateIdx = attrKeys.indexOf('state');
+
+	var template = $.templates("#theTmpl");
+	template.link(
+	  "#result", {
+            'attributes': Object.keys(attributes),
+            'regions': Object.keys(regions),
+            'states': Object.keys(states),
+            'images': images
+	  });
+
+	var dataTable = $('#coolTable').DataTable();
+	$('#state, #region').change(function() {
+	  dataTable.draw();
+	});
       });
-      
-      var attrKeys = Object.keys(attributes);
-      regionIdx = attrKeys.indexOf('region');
-      stateIdx = attrKeys.indexOf('state');
-      
-      
-      var template = $.templates("#theTmpl");
-      template.link(
-        "#result", {
-          'attributes': Object.keys(attributes),
-          'regions': Object.keys(regions),
-          'states': Object.keys(states),
-          'images': images
-        });
-      
-      var dataTable = $('#coolTable').DataTable();
-      $('#state, #region').change(function() {
-        dataTable.draw();
+    }
+
+    $(document).ready(function(){
+      $('#csp').change(function() {
+	set_values_csp($('#csp').val());
       });
-    });
-  
+
+      $.each(csps, function(i, option) {
+	var name = option.substr(1, option.indexOf('.') - 1);
+	if (i == 'azure') {
+          $('#csp').append($('<option/>').attr({"value": i, "selected": true}).text(name), 'default');
+	} else {
+          $('#csp').append($('<option/>').attr("value",i).text(name));
+	}
+      });
+    set_values_csp('azure');
   });
   </script>
 </body>
