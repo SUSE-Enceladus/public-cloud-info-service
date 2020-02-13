@@ -1,22 +1,24 @@
 <html>
 <head>
   <meta charset="utf-8"/>
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jsviews/1.0.5/jsviews.min.js"></script>
-  <script src="https://www.jsviews.com/download/jsrender.min.js"></script>
-  <script src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js"></script>
-  <link rel="stylesheet" href="https://cdn.datatables.net/1.10.20/css/jquery.dataTables.min.css"/>
-</head>
+  <script src="assets/js/jquery.min.js"></script>
+  <script src="assets/js/jsviews.min.js"></script>
+  <script src="assets/js/jsrender.min.js"></script>
+  <script src="assets/js/jquery.dataTables.min.js"></script>
+  <script src="assets/js/pluralize.js"></script>
+  <link rel="stylesheet" href="./assets/css/jquery.dataTables.min.css"/>
+  </head>
 <body>
-  <select id="csp">
-
-  </select>
+  <select id="csp" class='cloudProvider'></select>
   <div id="result">
   </div>
-
+  <style>
+    .cloudProvider {
+	float: left;
+	margin-right: .5%;
+    }
+    </style>
   <script id="theTmpl" type="text/x-jsrender">
-
-
   <select id="state">
     <option value="" default>All states</option>
     {{for states sort=true}}
@@ -24,14 +26,14 @@
     {{/for}}
   </select>
 
-      {{if regions.length > 0}} <!-- some CSP may have not regions -->
-      <select id="region">
-      <option value="" default>All regions</option>
-      {{for regions sort=true}}
+  {{if regions.length > 0}} <!-- some CSP may have not regions -->
+    <select id= "region">
+      <option value="" default>All {{:regionName}}</option>
+    {{for regions sort=true}}
       <option value="{{:}}">{{:}}</option>
-      {{/for}}
-  </select>
-	{{/if}}
+    {{/for}}
+    </select>
+  {{/if}}
 
   <table id="coolTable" class="display">
     <thead>
@@ -58,8 +60,8 @@
   var states = {};
 
   var regionIdx = {};
-    var stateIdx = {};
-    var cspFiles= '';
+  var stateIdx = {};
+  var cspFiles= '';
 
   jQuery.fn.dataTableExt.afnFiltering.push(
     function( oSettings, aData, iDataIdx ) {
@@ -77,18 +79,19 @@
   );
 
     var csps = {aws: '/amazon.xml', azure: '/microsoft.xml', gcp: '/google.xml'}
+    var cspsNames = [{aws: 'Amazon'}, {azure: 'Microsoft'}, {gcp: 'Google'}]
 
+    var regionName = [];
     function set_values_csp(csp) {
       images = [];
       attributes = {};
       regions = {};
       states = {};
-
       regionIdx = {};
       stateIdx = {};
 
       $.get(csps[csp], function(xmlData) {
-	var region = ''
+	var region = '';
 	$(xmlData).find('image').each(function(idx, imgItem){
 	  var image = {};
 	  $(imgItem.attributes).each(function(idx, imgItem){
@@ -115,7 +118,8 @@
             'attributes': Object.keys(attributes),
             'regions': Object.keys(regions),
             'states': Object.keys(states),
-            'images': images
+            'images': images,
+	    'regionName': pluralize(region)
 	  });
 
 	var dataTable = $('#coolTable').DataTable();
@@ -124,21 +128,27 @@
 	});
       });
     }
-
-    $(document).ready(function(){
-      $('#csp').change(function() {
-	set_values_csp($('#csp').val());
-      });
-
+    $(document).ready(function() {
+      var defaultCsp = 'azure';
       $.each(csps, function(i, option) {
 	var name = option.substr(1, option.indexOf('.') - 1);
-	if (i == 'azure') {
-          $('#csp').append($('<option/>').attr({"value": i, "selected": true}).text(name), 'default');
-	} else {
-          $('#csp').append($('<option/>').attr("value",i).text(name));
-	}
+	name = name[0].toUpperCase() + name.slice(1);
+
+	var attrs = {value: i};
+        if (i == defaultCsp) {
+          attrs['selected'] = true;
+        }
+
+	var option = $('<option/>').attr(attrs).text(name);
+	$('#csp').append(option);
       });
-    set_values_csp('azure');
+
+
+      $('#csp').change(function() {
+	set_values_csp($(this).val());
+      });
+
+      set_values_csp(defaultCsp);
   });
   </script>
 </body>
