@@ -217,18 +217,20 @@
     {{/for}}
   </select>
 
-      <select id="region">
-      <option value="" default>All regions</option>
-      {{for regions sort=true}}
+  {{if regions.length > 0}} <!-- some CSP may have not regions -->
+    <select id= "region">
+      <option value="" default>All {{:regionName}}</option>
+    {{for regions sort=true}}
       <option value="{{:}}">{{:}}</option>
-      {{/for}}
-  </select>
+    {{/for}}
+    </select>
+  {{/if}}
 
-	<table id="coolTable" class="display">
-	<thead>
-	{{for attributes}}
-	<th>{{:}}</th>
-	{{/for}}
+  <table id="coolTable" class="display">
+    <thead>
+    {{for attributes}}
+      <th>{{:}}</th>
+    {{/for}}
     </thead>
 	  <tbody>
 	  {{for images ~attributes=attributes}}
@@ -239,70 +241,106 @@
       </tr>
 	    {{/for}}
     </tbody>
-	      </table>
-	       </script>
+  </table>
+  </script>
 
-    <script>
-      var images = [];
-      var attributes = {};
-      var regions = {};
-      var states = {};
+  <script>
+  var images = [];
+  var attributes = {};
+  var regions = {};
+  var states = {};
 
-      var regionIdx;
-      var stateIdx;
+  var regionIdx = {};
+  var stateIdx = {};
+  var cspFiles= '';
 
-      jQuery.fn.dataTableExt.afnFiltering.push(
-	function( oSettings, aData, iDataIdx ) {
-	  var state = $('#state').val();
-	  var region = $('#region').val();
-	  var csp = $('#csp').val();
+  jQuery.fn.dataTableExt.afnFiltering.push(
+    function( oSettings, aData, iDataIdx ) {
+      var state = $('#state').val();
+      var region = $('#region').val();
+      var current_csp = $('#csp').val();
 
-	  var result = true;
-	  if (region) result = result && aData[regionIdx] == region;
-	  if (state) result = result && aData[stateIdx] == state;
-	  if (csp) result = result && aData[cspIdx] == csp;
+      var result = true;
 
-	  return result;
-	}
-      );
+      if (region) result = result && aData[regionIdx] == region;
+      if (state) result = result && aData[stateIdx] == state;
 
-      $(document).ready(function(){
-	  $.get('/amazon.xml', function(xmlData) {
-	    $(xmlData).find('image').each(function(idx, imgItem){
-	      var image = {};
-	      $(imgItem.attributes).each(function(idx, imgItem){
-		image[imgItem.name] = imgItem.value;
-		attributes[imgItem.name] = true;
+      return result;
+    }
+  );
 
-		if (imgItem.name == 'region') regions[imgItem.value] = true;
-		if (imgItem.name == 'state') states[imgItem.value] = true;
-	      });
-	      images.push(image);
-	    });
+    var csps = {aws: '/amazon.xml', azure: '/microsoft.xml', gcp: '/google.xml'}
+    var cspsNames = [{aws: 'Amazon'}, {azure: 'Microsoft'}, {gcp: 'Google'}]
 
+    var regionName = [];
+    function set_values_csp(csp) {
+      images = [];
+      attributes = {};
+      regions = {};
+      states = {};
+      regionIdx = {};
+      stateIdx = {};
 
+      $.get(csps[csp], function(xmlData) {
+	var region = '';
+	$(xmlData).find('image').each(function(idx, imgItem){
+	  var image = {};
+	  $(imgItem.attributes).each(function(idx, imgItem){
+            image[imgItem.name] = imgItem.value;
+            attributes[imgItem.name] = true;
+            if (imgItem.name == 'region' || imgItem.name == 'environment') {
+	      regions[imgItem.value] = true;
+	      region = imgItem.name;
+	    }
 
-	    var attrKeys = Object.keys(attributes);
-	    regionIdx = attrKeys.indexOf('region');
-	    stateIdx = attrKeys.indexOf('state');
-	    cspIdx = attrKeys.indexOf('framework');
-
-
-	    var template = $.templates("#theTmpl");
-	    template.link(
-	      "#result", {
-		'attributes': Object.keys(attributes),
-		'regions': Object.keys(regions),
-		'states': Object.keys(states),
-		'images': images
-	      });
-
-	    var dataTable = $('#coolTable').DataTable();
-	    $('#state, #region').change(function() {
-	      dataTable.draw();
-	    });
+            if (imgItem.name == 'state') states[imgItem.value] = true;
 	  });
+	  images.push(image);
+	});
+
+	var attrKeys = Object.keys(attributes);
+
+	regionIdx = attrKeys.indexOf(region);
+	stateIdx = attrKeys.indexOf('state');
+
+	var template = $.templates("#theTmpl");
+	template.link(
+	  "#result", {
+            'attributes': Object.keys(attributes),
+            'regions': Object.keys(regions),
+            'states': Object.keys(states),
+            'images': images,
+	    'regionName': pluralize(region)
+	  });
+
+	var dataTable = $('#coolTable').DataTable();
+	$('#state, #region').change(function() {
+	  dataTable.draw();
+	});
       });
-    </script>
-  </body>
+    }
+    $(document).ready(function() {
+      var defaultCsp = 'azure';
+      $.each(csps, function(i, option) {
+	var name = option.substr(1, option.indexOf('.') - 1);
+	name = name[0].toUpperCase() + name.slice(1);
+
+	var attrs = {value: i};
+        if (i == defaultCsp) {
+          attrs['selected'] = true;
+        }
+
+	var option = $('<option/>').attr(attrs).text(name);
+	$('#csp').append(option);
+      });
+
+
+      $('#csp').change(function() {
+	set_values_csp($(this).val());
+      });
+
+      set_values_csp(defaultCsp);
+  });
+  </script>
+</body>
 </html>
