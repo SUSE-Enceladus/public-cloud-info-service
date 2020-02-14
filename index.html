@@ -14,11 +14,13 @@
     <meta name="Content-Date" content="21 Jan 2010" />
     <meta name="Last-Modified" content="21 Jan 2010" />
     <meta charset="utf-8"/>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsviews/1.0.5/jsviews.min.js"></script>
-    <script src="https://www.jsviews.com/download/jsrender.min.js"></script>
-    <script src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js"></script>
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.20/css/jquery.dataTables.min.css"/>
+    <script src="assets/js/jquery.min.js"></script>
+    <script src="assets/js/jsviews.min.js"></script>
+    <script src="assets/js/jsrender.min.js"></script>
+    <script src="assets/js/jquery.dataTables.min.js"></script>
+    <link rel="stylesheet" href="assets/css/jquery.dataTables.min.css"/>
+    <script src="assets/js/pluralize.js"></script>
+
 
     <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.2/themes/dark-hive/jquery-ui.css"	type="text/css" media="all" />
     <link rel="stylesheet" href="https://www.suse.com/common/inc/css/support.css?v=2">
@@ -138,6 +140,7 @@
       <div class="top-banner" style="padding-top: 202px;"></div>
       <main role="main" class="">
         <div id="banner"></div>
+	<select id='csp' class='cloudProvider'></select>
 	<div id="result">
 	</div>
       </main>
@@ -201,15 +204,14 @@
           </div>
         </div>
       </footer>
+      <style>
+    .cloudProvider {
+	float: left;
+	margin-right: .5%;
+    }
+    </style>
 
     <script id="theTmpl" type="text/x-jsrender">
-  <select id="csp">
-  <option value="" default>All cloud providers</option>
-  {{for csps sort=true}}
-  <option value="{{:}}">{{:}}</option>
-  {{/for}}
-  </select>
-
     <select id="state">
     <option value="" default>All states</option>
     {{for states sort=true}}
