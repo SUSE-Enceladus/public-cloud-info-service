@@ -60,8 +60,9 @@ namespace :obs do
     app = %w(app.rb config.ru)
     configs = %w(publicCloudInfo-server.conf.template)
     docs = %w(LICENSE README.md)
+    assets = %w(public/)
     mkdir name_version
-    cp (app + configs + docs), "#{name_version}/"
+    cp_r (app + configs + docs + assets), "#{name_version}/"
     system "tar cjvf #{tarball_filename} #{name_version}"
     rm_rf name_version
     system "ls -la #{tarball_filename}"

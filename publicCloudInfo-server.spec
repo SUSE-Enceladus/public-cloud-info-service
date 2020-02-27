@@ -17,7 +17,7 @@
 #
 
 Name:      publicCloudInfo-server
-Version:   1.4.0
+Version:   1.5.0
 Release:   0
 License:   GPL-3.0
 Summary:   Server for a RESTful API to SUSE public cloud resources
@@ -52,6 +52,7 @@ in the public cloud, including deprecation status.
 
 %install
 install -m 0755 -d %{buildroot}/srv/www/%{name}/public
+cp -r public/* %{buildroot}/srv/www/%{name}/public
 install -m 0644 app.rb config.ru %{buildroot}/srv/www/%{name}/
 install -m 0755 -d %{buildroot}/etc/apache2/vhosts.d/
 install -m 0644 publicCloudInfo-server.conf.template %{buildroot}/etc/apache2/vhosts.d/

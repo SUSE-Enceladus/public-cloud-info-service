@@ -254,7 +254,7 @@ class PublicCloudInfoSrv < Sinatra::Base
   end
 
   get '/' do
-    redirect "https://www.suse.com/solutions/public-cloud/", 301
+    send_file File.join(settings.public_folder, 'index.html')
   end
 
   get '/*' do
