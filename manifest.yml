@@ -1,5 +1,0 @@
-applications:
-- name: pint-web-ui
-  memory: 32M
-  disk_quota: 50M
-  buildpack: staticfile_buildpack
