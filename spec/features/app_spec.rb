@@ -22,8 +22,14 @@ describe 'Root Path' do
   describe 'GET /' do
     before { get '/' }
 
-    it 'redirects permanently' do
-      expect(last_response.status).to eq 301
+    it 'responds successfully' do
+      expect(last_response.status).to eq 200
+    end
+
+    it 'respons with index.html' do
+      expect(last_response.body.force_encoding('utf-8')).to eq(
+        File.read('public/index.html')
+      )
     end
   end
 end
