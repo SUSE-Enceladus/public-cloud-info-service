@@ -1,257 +1,120 @@
-<html>
-  <head>
-    <title>Public cloud INformation Tracker | SUSE</title>
-    <link rel="shortcut icon" href="https://www.suse.com/favicon.ico" />
-    <link rel="icon" type="image/png" href="https://www.suse.com/favicon.ico">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta http-equiv="x-ua-compatible" content="ie=edge">
-    <meta http-equiv="Content-Language" content="en,us" />
-    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8" />
-    <meta http-equiv="Content-Style-Type" content="text/css" />
-    <meta http-equiv="Content-Script-Type" content="text/javascript" />
-    <meta name="author" content="Susan Kim" />
-    <meta name="Create-Date" content="21 Jan 2010" />
-    <meta name="Content-Date" content="21 Jan 2010" />
-    <meta name="Last-Modified" content="21 Jan 2010" />
-    <meta charset="utf-8"/>
-    <script src="assets/js/jquery.min.js"></script>
-    <script src="assets/js/jsviews.min.js"></script>
-    <script src="assets/js/jsrender.min.js"></script>
-    <script src="assets/js/jquery.dataTables.min.js"></script>
-    <link rel="stylesheet" href="assets/css/jquery.dataTables.min.css"/>
-    <script src="assets/js/pluralize.js"></script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Open Source Solutions for Enterprise Servers, Cloud &amp; Storage | SUSE</title>
 
+  <link rel="icon" type="image/png" href="https://www.suse.com/favicon.ico">
+  <link rel="stylesheet" href="https://www.suse.com/min/?b=assets/css&amp;f=bootstrap.css,helpers.css,jquery-ui.min.css,featherlight.min.css,featherlight.gallery.min.css,lightslider.css,main.css,iefix.css">
+  <link rel="stylesheet" href="https://www.suse.com/assets/css/font-awesome.css">
+  <script type="text/javascript" src="https://www.suse.com/min/?b=assets/js&amp;f=jquery-2.1.3.min.js,dummyfile.js"></script>
+  
+  <script src="assets/js/jquery.min.js"></script>
+  <script src="assets/js/jsviews.min.js"></script>
+  <script src="assets/js/jsrender.min.js"></script>
+  <script src="assets/js/jquery.dataTables.min.js"></script>
+  <link rel="stylesheet" href="assets/css/jquery.dataTables.min.css"/>
+  <script src="assets/js/pluralize.js"></script>
+</head>
 
-    <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.2/themes/dark-hive/jquery-ui.css"	type="text/css" media="all" />
-    <link rel="stylesheet" href="https://www.suse.com/common/inc/css/support.css?v=2">
-    <link rel="stylesheet" href="https://www.suse.com/common/inc/js/themes/custom-theme/jquery-ui-1.8.17.custom.css">
-    <link rel="stylesheet" type="text/css" href="https://www.suse.com/common/inc/fonts/484430/834A38E61C6EBEFF6.css" />
-    <link rel="stylesheet" href="https://www.suse.com/min/?b=assets/css&f=bootstrap.css,helpers.css,jquery-ui.min.css,featherlight.min.css,featherlight.gallery.min.css,main.css,lightslider.css,iefix.css">
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
-  </head>
-  <body>
-    <!-- <div id="result"> -->
-    <!-- </div> -->
-    <header class="nocontent ">
-        <div class="clear"></div>
-        <div class="container-fluid" style="height:0;">
-          <div class="floating-head-container">
-            <div id="floating-head">
-              <div id="head-image"></div>
-              <div id="head-text">
-                <div id="head-text2">
-                  Let's Chat
-                </div>
-              </div>
-              <div id="head-close"></div>
-            </div>
-          </div>
+<body>
+  <header class="nocontent">
+    <div class="clear"></div>
+    <div id="utilitynav">
+      <div class="container-fluid" style="max-width: unset;">
+        <div class="logo" style="height: 100px;">
+          <a href="https://www.suse.com"><span class="logo-blurb">We adapt. You succeed.</span></a>
         </div>
-        <div id="utilitynav">
-          <div class="container-fluid">
-            <div class="logo">
-              <a href="https://www.suse.com">
-                <span class="logo-blurb" style="white-space: nowrap;">We adapt. You succeed.</span>
-              </a>
-            </div>
-            <div id="utilitynav-cart">
-              <a href="https://buy.suse.com/store?Action=DisplayPage&Env=BASE&SiteID=suse&id=ThreePgCheckoutShoppingCartPage">
-                <span class="fa fa-shopping-cart"><span id="cart-number"></span></span>View Cart
-              </a>
-            </div>
-            <div id="utilitynav-customer" class="hidden-xs">
-              <a href="https://scc.suse.com/">Customer Center</a>
-            </div>
-            <div id="utilitynav-contact" class="hidden-xs">
-              <a href="https://www.suse.com/contact/">Contact</a>
-            </div>
-            <div id="utilitynav-login" class="hidden-xs">
-              <a id="login_trigger" href="#">Account<i class="fa fa-user-circle-o"></i></a>
-            </div>
-            <div id="utilitynav-vsep" class="hidden-xs">
-              <span></span>
-            </div>
-            <div id="utilitynav-language">
-              <div class="menu-item">
-                <span id="language-name">English</span>&nbsp;<span class="fa fa-caret-down"></span><i class="fa fa-globe"></i>
-              </div>
-            </div>
-            <div id="utilitynav-search">
-              <div id="searchbox">
-                <form id="searchform" action="#">
-                  <input type="text" class="search-text" name="term" placeholder="Search"/>
-                  <button type="submit" class="fa fa-search search-submit"></button>
-                </form>
-              </div>
-            </div>
-            <div id="utilitynav-chat" class="hidden-xs">
-              <a href="#" class="butn" data-toggle="modal" data-target="#talk-modal">Let's Chat</a>
-            </div>
-          </div>
-        </div>
-        <div id="menu">
-          <div class="container-fluid">
-            <div class="logo">
-              <a href="https://www.suse.com" style="whitespace: nowrap;">
-                We adapt. You succeed.
-              </a>
-            </div>
-            <a href="#" id="toggle" class="navbars" aria-hidden="true"><i class="fa fa-bars fa-2x"></i></a>
-            <div id="nav" role="navigation" aria-hidden="false">
-              <div class="categories menu-items">
-                <div class="letstalkmobile"><a href="#" class="mobile-talk" data-toggle="modal" data-target="#talk-modal">Let's Chat</a></div>
-                <div class="sub1 category products-solutions"><a>Products &amp; Solutions<i class="fa fa-angle-right fa-2x"></i></a></div>
-                <div class="sub1 category support"><a>Support &amp; Services<i class="fa fa-angle-right fa-2x"></i></a></div>
-                <div class="sub1 category partners"><a>Partners<i class="fa fa-angle-right fa-2x"></i></a></div>
-                <div class="sub1 category communities"><a>Communities<i class="fa fa-angle-right fa-2x"></i></a></div>
-                <div class="sub1 category category-about"><a>About<i class="fa fa-angle-right fa-2x"></i></a></div>
-                <div class="category downloads enabled "><a href="https://www.suse.com/download-linux/">Free Downloads</a></div>
-                <div class="category shop enabled "><a href="https://www.suse.com/shop/" onclick="ga('send', 'event', 'Main Nav', 'button', 'suse shop', {'anonymizeIp': true});">Shop</a></div>
-              </div>
-            </div>
-          </div>
-          <div class="breadcrumbs-container">
-            <div class="header-border breadcrumbs">
-              <div itemscope itemtype="http://schema.org/BreadcrumbList">
-                <span itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
-                  <a href="https://www.suse.com" class="home" itemprop="item">
-                    <span itemprop="name"></span>
-                  </a>
-                  <meta itemprop="position" content="1" />
-                </span>
-                <span itemprop="itemListElement" itemscope="" itemtype="http://schema.org/ListItem">
-                  <a href="/support/" class="highlight" itemprop="item">
-                    <span itemprop="name">Support</span>
-                  </a>
-                  <meta itemprop="position" content="2">
-                </span>
-              </div>
-            </div>
-          </div>
-          <div class="global-notification-container">
-            <div id="global-notification">
-              <div class="notification-item">
-                <a href="https://www.suse.com/c/news/melissa-di-donato-appointed-ceo-of-suse/ " style="padding-top: 8px;">Melissa Di Donato Appointed CEO of SUSE ›</a>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
-      <div class="top-banner" style="padding-top: 202px;"></div>
-      <main role="main" class="">
-        <div id="banner">
-						<br>
-						<h1>PINT - The Public Cloud INformation Tracker</h1>
-						<p>This service provides data about the images SUSE publishes in various
-						public cloud frameworks (Amazon, Google, Microsoft and Oracle) as well
-						as the servers that make up the SUSE maintained and operated
-						update infrastructure in those frameworks.</p>
-				</div>
-	<select id='csp' class='cloudProvider'></select>
-	<div id="result">
-	</div>
-      </main>
-      <div class="container-fluid" style="height:0;">
-          <div class="row">
-              <div class="col-xs-12">
-                  <div id="scrollTop" style="right: 46.5px; display: block;">
-                      <span class="fa fa-chevron-circle-up" onclick="backToTop()"></span>
-                  </div>
-              </div>
-          </div>
       </div>
-      <footer>
-        <div class="container-fluid ">
-          <div class="row">
-            <div class="footer">
-              <div class="logo">
-                <a href="https://www.suse.com">
-                  <img src="https://www.suse.com/assets/img/fn-suse-ico.png" alt="">
-                </a>
-              </div>
-              <div class="inline-container">
-                <div class="phone">
-
-                  <div class="number">
-                    Sales:
-                    1-800-796-3700
-                  </div>
-                  <div class="number">Support: 1-800-858-4000</div>
-                </div>
-                <div class="social">
-                  <ul>
-                    <li><a href="https://www.facebook.com/SUSEWorldwide"><img src="https://www.suse.com/assets/img/fn-fbook-ico.png" alt=""></a></li>
-                    <li><a href="https://www.twitter.com/SUSE"><img src="https://www.suse.com/assets/img/fn-twit-ico.png" alt=""></a></li>
-                    <li><a href="https://www.linkedin.com/company/suse"><img src="https://www.suse.com/assets/img/fn-link-ico.png" alt=""></a></li>
-                  </ul>
-                </div>
-                <div class="foot-nav">
-                  <ul>
-                    <li><a href="https://www.suse.com/company/careers/">Careers</a></li>
-                    <li><a href="https://www.suse.com/company/legal/">Legal</a></li>
-                    <li id="anti-slavery" style="display: none;"><a href="https://www.suse.com/docrep/documents/0ckboq2eo3/anti-slavery-statement-2016-signed.pdf">Anti-Slavery Statement</a></li>
-                    <li><a href="#" data-toggle="modal" data-target="#feedback-modal">Feedback</a></li>
-                    <li><a href="https://www.suse.com/company/about/">About</a></li>
-                    <li><a href="https://www.suse.com/company/subscribe/">Communications Preferences</a></li>
-                    <li><a href="https://www.suse.com/contact/">Contact</a></li>
-                    <li><a href="#" data-toggle="modal" data-target="#talk-modal">Let's Chat</a></li>
-                  </ul>
-                </div>
-                <div class="clearfix"></div>
-              </div>
-              <div class="divider"></div>
-              <div class="copy-left">
-                © <script type="text/javascript">var d = new Date(); document.write(d.getFullYear() + " ");</script>2019  SUSE, All Rights Reserved
-              </div>
-              <div class="copy">
-                <a href="https://www.suse.com/company/policies/privacy/" style="color:white;">Privacy and Cookie Policy</a>
-              </div>
-              <div class="clear"></div>
-            </div>
+    </div>
+    
+    <div id="menu">
+      <div class="container-fluid">
+        <div style="padding: 15px;"></div>
+      </div>
+      <div class="breadcrumbs-container">
+        <div class="header-border home"></div>
+      </div>
+    </div>
+    
+  </header>
+  <div class="top-banner"></div>
+  
+  <!--  -->
+  
+  <div style="padding: 10px;">
+    <div>
+        <h1>PINT - The Public Cloud INformation Tracker</h1>
+        <p>This service provides data about the images SUSE publishes in various
+        public cloud frameworks (Amazon, Google, Microsoft and Oracle) as well
+        as the servers that make up the SUSE maintained and operated
+        update infrastructure in those frameworks.</p>
+        
+        <select id='csp' class='cloudProvider'></select>
+      	<div id="result">
+      	</div>
+    </div>
+  </div>
+  
+  <!--  -->
+  
+  <!--footer>
+    <div class="container-fluid">
+      <div class="row">
+        <div class="footer">
+          <div class="copy-left">
+            ©
+            <script type="text/javascript">
+            var d = new Date(); document.write(d.getFullYear() + " ");
+            </script> SUSE, All Rights Reserved
           </div>
+          <div class="clear"></div>
         </div>
-      </footer>
-      <style>
-    .cloudProvider {
-	float: left;
-	margin-right: .5%;
-    }
-    </style>
+      </div>
+    </div>
+  </footer-->
 
-    <script id="theTmpl" type="text/x-jsrender">
-    <select id="state">
-    <option value="" default>All states</option>
-    {{for states sort=true}}
+  <style>
+  .cloudProvider {
+  float: left;
+  margin-right: .5%;
+  }
+  </style>
+
+  <script id="theTmpl" type="text/x-jsrender">
+  <select id="state">
+  <option value="" default>All states</option>
+  {{for states sort=true}}
+  <option value="{{:}}">{{:}}</option>
+  {{/for}}
+</select>
+
+{{if regions.length > 0}} <!-- some CSP may have not regions -->
+  <select id= "region">
+    <option value="" default>All {{:regionName}}</option>
+  {{for regions sort=true}}
     <option value="{{:}}">{{:}}</option>
-    {{/for}}
+  {{/for}}
   </select>
+{{/if}}
 
-  {{if regions.length > 0}} <!-- some CSP may have not regions -->
-    <select id= "region">
-      <option value="" default>All {{:regionName}}</option>
-    {{for regions sort=true}}
-      <option value="{{:}}">{{:}}</option>
+<table id="coolTable" class="display">
+  <thead>
+  {{for attributes}}
+    <th>{{:}}</th>
+  {{/for}}
+  </thead>
+  <tbody>
+  {{for images ~attributes=attributes}}
+  <tr class="odd">
+  {{for ~attributes ~imgData=#data}}
+        <td>{{:~imgData[#data]}}</td>
+  {{/for}}
+    </tr>
     {{/for}}
-    </select>
-  {{/if}}
-
-  <table id="coolTable" class="display">
-    <thead>
-    {{for attributes}}
-      <th>{{:}}</th>
-    {{/for}}
-    </thead>
-	  <tbody>
-	  {{for images ~attributes=attributes}}
-	  <tr class="odd">
-	  {{for ~attributes ~imgData=#data}}
-          <td>{{:~imgData[#data]}}</td>
-	  {{/for}}
-      </tr>
-	    {{/for}}
-    </tbody>
-  </table>
-  </script>
+  </tbody>
+</table>
+</script>
 
   <script>
   var images = [];
@@ -264,92 +127,92 @@
   var cspFiles= '';
 
   jQuery.fn.dataTableExt.afnFiltering.push(
-    function( oSettings, aData, iDataIdx ) {
-      var state = $('#state').val();
-      var region = $('#region').val();
-      var current_csp = $('#csp').val();
+  function( oSettings, aData, iDataIdx ) {
+  var state = $('#state').val();
+  var region = $('#region').val();
+  var current_csp = $('#csp').val();
 
-      var result = true;
+  var result = true;
 
-      if (region) result = result && aData[regionIdx] == region;
-      if (state) result = result && aData[stateIdx] == state;
+  if (region) result = result && aData[regionIdx] == region;
+  if (state) result = result && aData[stateIdx] == state;
 
-      return result;
-    }
+  return result;
+  }
   );
 
-    var csps = {aws: '/v1/amazon/images.xml', azure: '/v1/microsoft/images.xml', gcp: '/v1/google/images.xml'}
-    var cspsNames = [{aws: 'Amazon'}, {azure: 'Microsoft'}, {gcp: 'Google'}]
+  var csps = {aws: '/v1/amazon/images.xml', azure: '/v1/microsoft/images.xml', gcp: '/v1/google/images.xml'}
+  var cspsNames = {aws: 'Amazon Web Services', azure: 'Microsoft Azure', gcp: 'Google Cloud Platform'}
 
-    var regionName = [];
-    function set_values_csp(csp) {
-      images = [];
-      attributes = {};
-      regions = {};
-      states = {};
-      regionIdx = {};
-      stateIdx = {};
+  var regionName = [];
+  function set_values_csp(csp) {
+  images = [];
+  attributes = {};
+  regions = {};
+  states = {};
+  regionIdx = {};
+  stateIdx = {};
 
-      $.get(csps[csp], function(xmlData) {
-	var region = '';
-	$(xmlData).find('image').each(function(idx, imgItem){
-	  var image = {};
-	  $(imgItem.attributes).each(function(idx, imgItem){
-            image[imgItem.name] = imgItem.value;
-            attributes[imgItem.name] = true;
-            if (imgItem.name == 'region' || imgItem.name == 'environment') {
-	      regions[imgItem.value] = true;
-	      region = imgItem.name;
-	    }
+  $.get(csps[csp], function(xmlData) {
+  var region = '';
+  $(xmlData).find('image').each(function(idx, imgItem){
+  var image = {};
+  $(imgItem.attributes).each(function(idx, imgItem){
+        image[imgItem.name] = imgItem.value;
+        attributes[imgItem.name] = true;
+        if (imgItem.name == 'region' || imgItem.name == 'environment') {
+    regions[imgItem.value] = true;
+    region = imgItem.name;
+  }
 
-            if (imgItem.name == 'state') states[imgItem.value] = true;
-	  });
-	  images.push(image);
-	});
+        if (imgItem.name == 'state') states[imgItem.value] = true;
+  });
+  images.push(image);
+  });
 
-	var attrKeys = Object.keys(attributes);
+  var attrKeys = Object.keys(attributes);
 
-	regionIdx = attrKeys.indexOf(region);
-	stateIdx = attrKeys.indexOf('state');
+  regionIdx = attrKeys.indexOf(region);
+  stateIdx = attrKeys.indexOf('state');
 
-	var template = $.templates("#theTmpl");
-	template.link(
-	  "#result", {
-            'attributes': Object.keys(attributes),
-            'regions': Object.keys(regions),
-            'states': Object.keys(states),
-            'images': images,
-	    'regionName': pluralize(region)
-	  });
+  var template = $.templates("#theTmpl");
+  template.link(
+  "#result", {
+        'attributes': Object.keys(attributes),
+        'regions': Object.keys(regions),
+        'states': Object.keys(states),
+        'images': images,
+  'regionName': pluralize(region)
+  });
 
-	var dataTable = $('#coolTable').DataTable();
-	$('#state, #region').change(function() {
-	  dataTable.draw();
-	});
-      });
+  var dataTable = $('#coolTable').DataTable();
+  $('#state, #region').change(function() {
+  dataTable.draw();
+  });
+  });
+  }
+  $(document).ready(function() {
+  var defaultCsp = 'azure';
+  $.each(csps, function(csp, option) {
+  var name = cspsNames[csp];
+
+  var attrs = {value: csp};
+    if (csp == defaultCsp) {
+      attrs['selected'] = true;
     }
-    $(document).ready(function() {
-      var defaultCsp = 'azure';
-      $.each(csps, function(i, option) {
-	var name = option.substr(1, option.indexOf('.') - 1);
-	name = name[0].toUpperCase() + name.slice(1);
 
-	var attrs = {value: i};
-        if (i == defaultCsp) {
-          attrs['selected'] = true;
-        }
-
-	var option = $('<option/>').attr(attrs).text(name);
-	$('#csp').append(option);
-      });
+  var option = $('<option/>').attr(attrs).text(name);
+  $('#csp').append(option);
+  });
 
 
-      $('#csp').change(function() {
-	set_values_csp($(this).val());
-      });
+  $('#csp').change(function() {
+  set_values_csp($(this).val());
+  });
 
-      set_values_csp(defaultCsp);
+  set_values_csp(defaultCsp);
   });
   </script>
+  
 </body>
 </html>
