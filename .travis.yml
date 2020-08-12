@@ -5,7 +5,7 @@ jobs:
   include:
     - name: "specs"
       script:
-        - "bundle exec rails spec"
+        - "bundle exec rspec"
     - name: "style"
       script:
         - "bundle exec rubocop -v"
