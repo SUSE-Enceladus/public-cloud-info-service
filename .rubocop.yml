@@ -4,8 +4,8 @@ require:
 AllCops:
   Exclude:
     - "public/*"
-  Include:
-    - "Gemfile.*"
+    - "publicCloudInfo-server.spec"
+  TargetRubyVersion: 2.5
 
 Bundler/OrderedGems:
   TreatCommentsAsGroupSeparators: true
@@ -29,6 +29,9 @@ Layout/SpaceAroundEqualsInParameterDefault:
 Layout/MultilineMethodCallBraceLayout:
   EnforcedStyle: new_line
 
+Lint/UriEscapeUnescape:
+  Enabled: false
+
 Style/SymbolArray:
   EnforcedStyle: brackets
 
@@ -45,10 +48,22 @@ RSpec/MultipleExpectations:
 RSpec/AnyInstance:
   Enabled: false
 
+RSpec/DescribeClass:
+  Enabled: false
+
+RSpec/MultipleDescribes:
+  Enabled: false
+
+RSpec/NestedGroups:
+  Enabled: false
+
 Style/Documentation:
   Exclude:
     - "spec/**/*"
     - "Rakefile"
+
+Style/ClassAndModuleChildren:
+  Enabled: false
 
 Metrics/BlockLength:
   Exclude:
@@ -71,7 +86,7 @@ Metrics/MethodLength:
   Enabled: false
 
 Metrics/ClassLength:
-  Max: 150
+  Enabled: false
 
 Style/FormatStringToken:
   Exclude:

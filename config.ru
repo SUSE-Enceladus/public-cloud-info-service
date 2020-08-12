@@ -1,4 +1,6 @@
-# Copyright © 2015 SUSE LLC, James Mason <jmason@suse.com>.
+# frozen_string_literal: true
+
+# Copyright (c) 2015 SUSE LLC, James Mason <jmason@suse.com>.
 #
 # This file is part of publicCloudInfoSrv.
 #
@@ -14,7 +16,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with publicCloudInfoSrv. If not, see <http://www.gnu.org/licenses/>.
-
 
 require File.dirname(__FILE__) + '/app.rb'
 
