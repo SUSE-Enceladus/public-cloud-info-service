@@ -3,8 +3,9 @@ require:
 
 AllCops:
   Exclude:
-    - "public/*"
+    - "public/**/*"
     - "publicCloudInfo-server.spec"
+    - "vendor/**/*"
   TargetRubyVersion: 2.5
 
 Bundler/OrderedGems:

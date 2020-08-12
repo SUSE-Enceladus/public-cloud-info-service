@@ -9,4 +9,4 @@ jobs:
     - name: "style"
       script:
         - "bundle exec rubocop -v"
-        - "bundle exec rubocop"
+        - "bundle exec rubocop -c .rubocop.yml"
