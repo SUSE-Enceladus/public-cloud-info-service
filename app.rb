@@ -175,6 +175,50 @@ class PublicCloudInfoSrv < Sinatra::Base
     end
   end
 
+  def form_xml_for_settings(tag, values)
+    Nokogiri::XML::Builder.new do |xml|
+      xml.root do
+        values.each { |value| xml.send(tag, name: value) }
+      end
+    end.doc.css(tag)
+  end
+
+  get '/v1/providers.?:ext?' do
+    validate_params_ext
+
+    responses = form_xml_for_settings('provider', settings.providers)
+
+    respond_with params[:ext], :providers, responses
+  end
+
+  get '/v1/:provider/servers/types.?:ext?' do
+    validate_params_ext
+    validate_params_provider
+
+    responses = form_xml_for_settings('type', settings.server_types)
+
+    respond_with params[:ext], :types, responses
+  end
+
+  get '/v1/images/states.?:ext?' do
+    validate_params_ext
+
+    responses = form_xml_for_settings('state', settings.image_states)
+
+    respond_with params[:ext], :states, responses
+  end
+
+  get '/v1/:provider/regions.?:ext?' do
+    validate_params_ext
+    validate_params_provider
+
+    responses = form_xml_for_settings(
+      'region', settings.regions[params[:provider]]
+    )
+
+    respond_with params[:ext], :regions, responses
+  end
+
   get '/v1/:provider/:region/servers/:server_type.?:ext?' do
     validate_params_ext
     validate_params_server_type

@@ -513,3 +513,96 @@ describe 'environmented images: /v1/microsoft' do
     end
   end
 end
+
+# we test the metadata APIs for amazon
+describe 'metadata APIs' do
+  describe 'providers list' do
+    before do
+      @path = '/v1/providers.xml'
+    end
+
+    it 'responds successfully' do
+      get 'v1/providers'
+      expect(last_response.status).to eq 200
+    end
+
+    it 'matches Json provider list' do
+      get 'v1/providers'
+      expect(last_response.body).to eq(
+        '{"providers":[{"name":"amazon"},{"name":"google"},' \
+        '{"name":"microsoft"},{"name":"oracle"}]}'
+      )
+    end
+
+    it 'matches Xml provider list' do
+      compare_with_fixture(@path)
+    end
+  end
+
+  describe 'server types list' do
+    before do
+      @path = '/v1/amazon/servers/types.xml'
+    end
+
+    it 'responds successfully' do
+      get 'v1/amazon/servers/types'
+      expect(last_response.status).to eq 200
+    end
+
+    it 'matches server types list' do
+      get 'v1/amazon/servers/types'
+      expect(last_response.body).to eq(
+        '{"types":[{"name":"smt"},{"name":"regionserver"}]}'
+      )
+    end
+
+    it 'matches server types XML list' do
+      compare_with_fixture(@path)
+    end
+  end
+
+  describe 'image states' do
+    before do
+      @path = '/v1/images/states.xml'
+    end
+
+    it 'responds successfully' do
+      get 'v1/images/states'
+      expect(last_response.status).to eq 200
+    end
+
+    it 'matches image state list' do
+      get 'v1/images/states'
+      expect(last_response.body).to eq(
+        '{"states":[{"name":"active"},{"name":"inactive"},' \
+        '{"name":"deprecated"},{"name":"deleted"}]}'
+      )
+    end
+
+    it 'matches image state XML list' do
+      compare_with_fixture(@path)
+    end
+  end
+
+  describe 'regions list in amazon' do
+    before do
+      @path = '/v1/amazon/regions.xml'
+    end
+
+    it 'responds successfully' do
+      get 'v1/amazon/regions'
+      expect(last_response.status).to eq 200
+    end
+
+    it 'matches partially region list' do
+      get 'v1/amazon/regions'
+      expect(last_response.body).to eq(
+        '{"regions":[{"name":"us-west-2"}]}'
+      )
+    end
+
+    it 'matches partially region XML list' do
+      compare_with_fixture(@path)
+    end
+  end
+end

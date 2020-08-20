@@ -54,6 +54,28 @@ all information at that level.
 
 For example:
 
+**Metadata APIs**
+```
+https://susepubliccloudinfo.suse.com/v1/providers.json
+```
+Will return list of all providers in JSON format 
+
+```
+https://susepubliccloudinfo.suse.com/v1/images/states.json
+```
+Will return list of all image states in JSON format
+
+```
+https://susepubliccloudinfo.suse.com/v1/amazon/servers/types.json
+```
+Will return list of all server types in Amazon in JSON format
+
+```
+https://susepubliccloudinfo.suse.com/v1/amazon/regions.json
+```
+Will return list of all known regions in Amazon in JSON format
+
+**Specific APIs**
 ```
 https://susepubliccloudinfo.suse.com/v1/microsoft/West%20US/servers/smt.json
 ```
@@ -113,3 +135,40 @@ Client Implementation
 
 `pint`, our Python-based client, is available in the Public Cloud Module, or in
 the Cloud:Tools project in OBS, as `python-susepubliccloudinfo`.
+
+Development
+-----------
+The following steps are only recommended if you want to build this project from sources, work on the codebase or test the latest development changes
+
+  1. **Install Git**
+
+         $ sudo zypper in git
+
+  2. **Install basic Ruby environment**
+
+         $ sudo zypper in ruby
+
+  3. **Install dependencies**
+
+     Install packages needed to compile Gems with native extensions:
+
+         $ sudo zypper in gcc make ruby-devel ruby2.5-rubygem-rack
+
+  4. **Clone public-cloud-info-service repository and install Gem dependencies**
+
+         $ git clone https://github.com/SUSE-Enceladus/public-cloud-info-service.git 
+         $ cd public-cloud-info-service 
+         $ bundle install
+
+  6. **In order to run REST APIs on the host**
+        
+         $ cd public-cloud-info-service
+         $ export FRAMEWORKS=spec/fixtures/framework*.xml
+         $ rackup
+         
+      To run REST APIs, point your browser to http://127.0.0.1:9292/
+
+  7. **In order to run tests**
+   
+         $ cd public-cloud-info-service
+         $ rspec
