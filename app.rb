@@ -183,6 +183,10 @@ class PublicCloudInfoSrv < Sinatra::Base
     end.doc.css(tag)
   end
 
+  before do
+    headers 'Access-Control-Allow-Origin' => '*'
+  end
+
   get '/v1/providers.?:ext?' do
     validate_params_ext
 

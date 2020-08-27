@@ -31,9 +31,16 @@ end
 
 describe 'supported version' do
   describe 'v1' do
-    it 'responds successfully' do
+    before do
       get "v1/#{valid_providers.first}/#{valid_categories.first}"
+    end
+
+    it 'responds successfully' do
       expect(last_response.status).to eq 200
+    end
+
+    it 'enables CORS requests' do
+      expect(last_response.headers['Access-Control-Allow-Origin']).to eq('*')
     end
   end
 
