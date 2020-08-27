@@ -1,13 +1,13 @@
 <VirtualHost *:80>
-  ServerAdmin jgordon@suse.com
+  ServerAdmin admin@example.com
   ServerName susepubliccloudinfo.suse.com
-  DocumentRoot /srv/www/publicCloudInfoSrv/public
+  DocumentRoot /srv/www/publicCloudInfo-server/public
   Include /etc/apache2/conf.d/mod_passenger.conf
   # dev/test
   # SetEnv FRAMEWORKS /srv/www/publicCloudInfoSrv/spec/fixtures/framework-*.xml
   # production
   SetEnv FRAMEWORKS /etc/publicCloudInfo/*.xml
-  <Directory "/srv/www/publicCloudInfoSrv/public">
+  <Directory "/srv/www/publicCloudInfo-server/public">
     Options -MultiViews 
     <IfModule mod_access_compat.c>
     Order allow,deny
