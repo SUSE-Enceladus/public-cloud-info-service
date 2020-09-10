@@ -7,6 +7,14 @@
     </images>
   </framework>
   <framework name="google">
+    <servers>
+      <server type="smt" name="smt-gce.susecloud.net" ip="35.228.142.43" region="europe-north1"/>
+      <server type="smt" name="smt-gce.susecloud.net" ip="35.228.148.188" region="europe-north1"/>
+    </servers>
+    <images>
+      <image name="suse-manager-4-1-server-byos-v20200721" state="active" replacementname="" publishedon="20200721" deprecatedon="" deletedon=""/>
+      <image name="suse-manager-4-1-proxy-byos-v20200721" state="active" replacementname="" publishedon="20200721" deprecatedon="" deletedon=""/>
+    </images>
   </framework>
   <framework name="microsoft">
     <servers>
