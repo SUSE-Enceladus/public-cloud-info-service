@@ -613,3 +613,16 @@ describe 'metadata APIs' do
     end
   end
 end
+
+# we test the region images queries for google
+describe 'google region images query' do
+  describe 'google images' do
+    before do
+      @path = '/v1/google/europe-north1/images/active.xml'
+    end
+
+    it 'matches google images list' do
+      compare_with_fixture(@path)
+    end
+  end
+end

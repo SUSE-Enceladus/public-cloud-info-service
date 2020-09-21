@@ -261,6 +261,11 @@ class PublicCloudInfoSrv < Sinatra::Base
         .in_state(params[:image_state])
         .in_env(environment)
         .set_region(params[:region])
+    elsif images(params[:provider])
+          .in_state(params[:image_state])
+          .in_region(params[:region]).empty?
+      images(params[:provider])
+        .in_state(params[:image_state])
     else
       images(params[:provider])
         .in_state(params[:image_state])
