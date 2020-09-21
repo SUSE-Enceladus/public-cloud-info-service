@@ -626,3 +626,24 @@ describe 'google region images query' do
     end
   end
 end
+
+# we test the message returned when regions not supported
+describe 'Region API returns no info' do
+  describe 'regions list' do
+    before do
+      @path = '/v1/oracle/regions.xml'
+    end
+
+    it 'matches Json empty regions list' do
+      get 'v1/oracle/regions'
+      expect(last_response.body).to eq(
+        '{"regions":[{"name":"No region information available. ' \
+        'Images have the same identifier in all regions"}]}'
+      )
+    end
+
+    it 'matches Xml empty region list' do
+      compare_with_fixture(@path)
+    end
+  end
+end

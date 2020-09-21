@@ -216,9 +216,16 @@ class PublicCloudInfoSrv < Sinatra::Base
     validate_params_ext
     validate_params_provider
 
-    responses = form_xml_for_settings(
-      'region', settings.regions[params[:provider]]
-    )
+    responses = if settings.regions[params[:provider]].empty?
+      form_xml_for_settings(
+        'region', Array['No region information available. '\
+        'Images have the same identifier in all regions']
+      )
+    else
+      form_xml_for_settings(
+        'region', settings.regions[params[:provider]]
+      )
+    end
 
     respond_with params[:ext], :regions, responses
   end
