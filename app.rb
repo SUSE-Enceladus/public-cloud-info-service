@@ -31,6 +31,10 @@ class Nokogiri::XML::NodeSet
     css("[region='#{region}']")
   end
 
+  def in_regions(regions)
+    css(regions.join(','))
+  end
+
   def of_type(server_type)
     css("[type|='#{server_type}']")
   end
@@ -74,7 +78,8 @@ class PublicCloudInfoSrv < Sinatra::Base
       frameworks.map do |provider, framework|
         regions = [
           framework.css('server[region],image[region]').map { |n| n['region'] },
-          framework.css('region[name]').map { |n| n['name'] }
+          framework.css('region[name]').map { |n| n['name'] },
+          framework.css('alternate[name]').map { |n| n['name'] }
         ].flatten.compact.uniq.sort!
         [provider, regions]
       end
@@ -135,10 +140,42 @@ class PublicCloudInfoSrv < Sinatra::Base
     # if the framework uses environments
     framework = settings.frameworks[provider]
     regions_in_env = framework.css("environment>region[name='#{region}']")
+    if regions_in_env.empty?
+      alternate_regions_in_env = framework.css("alternate[name='#{region}']")
+      if alternate_regions_in_env
+        region_name = alternate_regions_in_env.first.parent['name']
+        regions_in_env =
+          framework.css("environment>region[name='#{region_name}']")
+      end
+    end
     return region if regions_in_env.empty?
 
     environment = regions_in_env.first.parent
     return environment['name']
+  end
+
+  def get_alternate_region(provider, region)
+    framework = settings.frameworks[provider]
+    alternate_regions =
+      framework.css(
+        "region[name='#{region}']>alternate[name]"
+      ).map { |n| n['name'] }
+    if alternate_regions.empty?
+      region_name =
+        framework.css("alternate[name='#{region}']").first.parent['name']
+      alternate_regions =
+        framework.css(
+          "region[name='#{region_name}']>alternate[name]"
+        ).map { |n| n['name'] }
+      alternate_regions << region_name
+    else
+      alternate_regions << region
+    end
+    regions = []
+    alternate_regions.each do |n|
+      regions << "[region='#{n}']"
+    end
+    return regions
   end
 
   def environments?(provider)
@@ -229,9 +266,19 @@ class PublicCloudInfoSrv < Sinatra::Base
     validate_params_region
     validate_params_provider
 
-    responses = servers(params[:provider])
-                .of_type(params[:server_type])
-                .in_region(params[:region])
+    responses = if environments?(params[:provider])
+      alternate_regions = get_alternate_region(
+        params[:provider],
+        params[:region]
+      )
+      servers(params[:provider])
+        .of_type(params[:server_type])
+        .in_regions(alternate_regions)
+    else
+      servers(params[:provider])
+        .of_type(params[:server_type])
+        .in_region(params[:region])
+    end
 
     respond_with params[:ext], :servers, responses
   end
@@ -295,7 +342,6 @@ class PublicCloudInfoSrv < Sinatra::Base
 
     responses = if environments?(params[:provider]) &&
                    params[:category] == 'images'
-
       environment = remap_region_to_environment(
         params[:provider],
         params[:region]
@@ -304,11 +350,15 @@ class PublicCloudInfoSrv < Sinatra::Base
         params[:category].to_s,
         params[:provider]
       ).in_env(environment).set_region(params[:region])
-    else
+    elsif environments?(params[:provider]) &&
+          params[:category] == 'servers'
+      alt_regions = get_alternate_region(params[:provider], params[:region])
       send(
         params[:category].to_s,
         params[:provider]
-      ).in_region(params[:region])
+      ).in_regions(alt_regions)
+    else
+      send(params[:category].to_s, params[:provider]).in_region(params[:region])
     end
 
     respond_with params[:ext], params[:category], responses

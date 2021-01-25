@@ -10,8 +10,9 @@
   </servers>
   <environments>
     <environment name="PublicAzure">
-      <region name="West US"/>
-      <region name="uswest"/>
+      <region name="uswest">
+        <alternate name="West US"/>
+      </region>
     </environment>
     <environment name="Blackforest">
     </environment>
