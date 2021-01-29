@@ -21,7 +21,7 @@ ENV['RACK_ENV'] = 'test'
 ENV['FRAMEWORKS'] = File.expand_path(
   File.join(
     File.dirname(__FILE__),
-    'fixtures/frameworks.xml'
+    'fixtures/pint-data/data/frameworks.xml'
   )
 )
 

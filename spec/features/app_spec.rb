@@ -626,3 +626,27 @@ describe 'google region images query' do
     end
   end
 end
+
+describe 'data version API' do
+  describe 'data version info' do
+    before do
+      @path = '/v1/data-version.xml'
+    end
+
+    it 'responds successfully' do
+      get 'v1/data-version'
+      expect(last_response.status).to eq 200
+    end
+
+    it 'matches Json data version info' do
+      get 'v1/data-version'
+      expect(last_response.body).to eq(
+        '{"versions":[{"name":"2021.01.15"}]}'
+      )
+    end
+
+    it 'matches Xml data version info' do
+      compare_with_fixture(@path)
+    end
+  end
+end
