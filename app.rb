@@ -178,6 +178,27 @@ class PublicCloudInfoSrv < Sinatra::Base
     return regions
   end
 
+  def data_version_info
+    data_version = []
+    path_parts = []
+    return unless ENV['FRAMEWORKS']
+
+    if File.dirname(ENV['FRAMEWORKS']).include? 'pint-data'
+      path_parts = File.dirname(ENV['FRAMEWORKS']).partition('pint-data')
+    end
+    return if path_parts.empty?
+
+    path = path_parts[0].concat(path_parts[1]).concat('/.bumpversion.cfg')
+    File.open(path) do |f|
+      f.any? do |version|
+        if version.include?('current_version =')
+          data_version << version.split('=')[1].strip
+        end
+      end
+    end
+    return data_version
+  end
+
   def environments?(provider)
     framework = settings.frameworks[provider]
     return !framework.css('environments').empty?
@@ -374,6 +395,15 @@ class PublicCloudInfoSrv < Sinatra::Base
       responses.clear_region
     end
     respond_with params[:ext], params[:category], responses
+  end
+
+  get '/v1/data-version.?:ext?' do
+    validate_params_ext
+
+    data_version = data_version_info
+    responses = form_xml_for_settings('version', data_version)
+
+    respond_with params[:ext], :versions, responses
   end
 
   get '/' do
