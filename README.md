@@ -1,6 +1,8 @@
 Public Cloud Info Service
 =========================
 
+[![Test suite](https://github.com/SUSE-Enceladus/public-cloud-info-service/actions/workflows/ruby.yml/badge.svg)](https://github.com/SUSE-Enceladus/public-cloud-info-service/actions/workflows/ruby.yml)
+
 Provides a list of servers hosted in a cloud framework, for properly limiting
 network egress.
 
@@ -58,7 +60,7 @@ For example:
 ```
 https://susepubliccloudinfo.suse.com/v1/providers.json
 ```
-Will return list of all providers in JSON format 
+Will return list of all providers in JSON format
 
 ```
 https://susepubliccloudinfo.suse.com/v1/images/states.json
@@ -156,19 +158,19 @@ The following steps are only recommended if you want to build this project from 
 
   4. **Clone public-cloud-info-service repository and install Gem dependencies**
 
-         $ git clone https://github.com/SUSE-Enceladus/public-cloud-info-service.git 
-         $ cd public-cloud-info-service 
+         $ git clone https://github.com/SUSE-Enceladus/public-cloud-info-service.git
+         $ cd public-cloud-info-service
          $ bundle install
 
   6. **In order to run REST APIs on the host**
-        
+
          $ cd public-cloud-info-service
          $ export FRAMEWORKS=spec/fixtures/framework*.xml
          $ rackup
-         
+
       To run REST APIs, point your browser to http://127.0.0.1:9292/
 
   7. **In order to run tests**
-   
+
          $ cd public-cloud-info-service
          $ rspec
