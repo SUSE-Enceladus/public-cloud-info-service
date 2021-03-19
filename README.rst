@@ -1,3 +1,5 @@
+|CI-Workflow-Badge|
+
 ============
 Introduction
 ============
@@ -335,15 +337,19 @@ Here's an example of a normal workflow for performing schema update.
    .. code-block::
 
      ./bin/schema_upgrade.sh -h db_host -U db_user -W db_password -n db_name --ssl-mode require --root-cert /etc/ssl/postgresql_ca_cert.pem upgrade
-     ./bin/data_update.sh -h db_host -U db_user -W db_password -n db_name --ssl-mode require --root-cert /etc/ssl/postgresql_ca_cert.pem update --pint-data /home/foo/pint-data     
+     ./bin/data_update.sh -h db_host -U db_user -W db_password -n db_name --ssl-mode require --root-cert /etc/ssl/postgresql_ca_cert.pem update --pint-data /home/foo/pint-data
 
    **NOTE**: in the above example, */home/foo/pint-data* is where you clone the
    *pint-data* repo. In other words, the XML data files are expected to be
    located in the */home/foo/pint-data/data* directory.
 
-   **NOTE**: The --root-cert is path to the file with the RDS CA bundle which can be obtained from 
+   **NOTE**: The --root-cert is path to the file with the RDS CA bundle which can be obtained from
    https://s3.amazonaws.com/rds-downloads/rds-combined-ca-bundle.pem
 
    **NOTE**: in a development environment where TLS is not enabled for the
    PostgreSQL instance, the *--ssl-mode* and *--root-cert* arguments are
    not needed.
+
+.. |CI-Workflow-Badge| image:: https://github.com/SUSE-Enceladus/public-cloud-info-service/actions/workflows/ci-workflow.yml/badge.svg
+  :target: https://github.com/SUSE-Enceladus/public-cloud-info-service/actions/workflows/ci-workflow.yml
+  :alt: CI Workflow status - Github Actions
