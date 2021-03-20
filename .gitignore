@@ -1,2 +1,6 @@
 Gemfile*.lock
 *.tar.bz2
+python
+__pycache__
+.aws-sam
+.staging
