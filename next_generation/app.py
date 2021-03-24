@@ -363,12 +363,16 @@ def list_provider_resource(provider, category):
 
 @app.route('/', methods=['GET'])
 def redirect_to_public_cloud():
-    return redirect('https://www.suse.com/solutions/public-cloud/')
+    #return redirect('https://www.suse.com/solutions/public-cloud/')
+    headers = {
+        'Location': 'https://www.suse.com/solutions/public-cloud/',
+    }
+    return Response('', status=301, headers=headers)
 
 
 @app.route('/<path:path>')
 def catch_all(path):
-    abort(400)
+    abort(Response('', status=400))
 
 
 if __name__ == '__main__':
