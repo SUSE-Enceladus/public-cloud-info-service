@@ -2,6 +2,7 @@ import os
 from decimal import Decimal
 from flask import abort, Flask, jsonify, make_response, request, redirect, \
                   Response
+from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import text, or_
 from xml.dom import minidom
@@ -39,6 +40,13 @@ null_to_empty = lambda s : s or ''
 
 
 app = Flask(__name__)
+
+cors_config = {
+    "origins": ["*"]
+}
+CORS(app, resources={
+    r"/*": cors_config
+})
 
 if os.environ.get('DATABASE_URI', None):
     app.config['SQLALCHEMY_DATABASE_URI'] = os.environ['DATABASE_URI']
