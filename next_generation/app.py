@@ -375,11 +375,12 @@ def list_provider_resource(provider, category):
     return make_response(resources, category, category[:-1])
 
 
-@app.route('/v1/<provider>/dataversion/<category>', methods=['GET'])
-@app.route('/v1/<provider>/dataversion/<category>.json', methods=['GET'])
-@app.route('/v1/<provider>/dataversion/<category>.xml', methods=['GET'])
-def get_provider_category_data_version(provider, category):
+@app.route('/v1/<provider>/dataversion', methods=['GET'])
+@app.route('/v1/<provider>/dataversion.json', methods=['GET'])
+@app.route('/v1/<provider>/dataversion.xml', methods=['GET'])
+def get_provider_category_data_version(provider):
     assert_valid_provider(provider)
+    category = request.args.get('category')
     assert_valid_category(category)
     version = get_data_version_for_provider_category(provider, category)
     return make_response(version, None, None)
