@@ -64,7 +64,7 @@ from models import ImageState, AmazonImagesModel, OracleImagesModel, \
                    AlibabaImagesModel, MicrosoftImagesModel, \
                    GoogleImagesModel, AmazonServersModel, \
                    MicrosoftServersModel, GoogleServersModel, \
-                   AlibabaServersModel, OracleServersModel, ServerType, \
+                   ServerType, VersionsModel, \
                    AzureEnvironmentsModel
 
 
@@ -81,9 +81,7 @@ PROVIDER_IMAGES_MODEL_MAP = {
 PROVIDER_SERVERS_MODEL_MAP = {
     'amazon': AmazonServersModel,
     'google': GoogleServersModel,
-    'microsoft': MicrosoftServersModel,
-    'alibaba': AlibabaServersModel,
-    'oracle': OracleServersModel
+    'microsoft': MicrosoftServersModel
 }
 
 SUPPORTED_CATEGORIES = ['images', 'servers']
@@ -122,14 +120,21 @@ def get_providers():
     return [{'name': provider} for provider in providers]
 
 
-def json_to_xml(list_of_dicts, collection_name, element_name):
-    root = ET.Element(collection_name)
-    for dict in list_of_dicts:
-        # FIXME(gyee): fix 'version' part when the schema is finalized.
-        # for now, lets not returning it
-        if 'version' in dict:
-            del dict['version']
-        ET.SubElement(root, element_name, dict)
+def json_to_xml(json_obj, collection_name, element_name):
+    if collection_name:
+        root = ET.Element(collection_name)
+        for dict in json_obj:
+            ET.SubElement(root, element_name, dict)
+    else:
+        if element_name:
+            root = ET.Element(element_name, json_obj)
+        else:
+            # NOTE(gyee): if neither collection_name and element_name are
+            # specified, we assume the json_obj has a single key value pair
+            # with key as the tag and value as the text
+            tag = list(json_obj.keys())[0]
+            root = ET.Element(tag)
+            root.text = json_obj[tag]
     parsed = minidom.parseString(
         ET.tostring(root, encoding='utf8', method='xml'))
     return parsed.toprettyxml(indent='  ')
@@ -240,6 +245,12 @@ def get_provider_images(provider):
     return [get_formatted_dict(image) for image in images]
 
 
+def get_data_version_for_provider_category(provider, category):
+    column_name = provider + category
+    versions = VersionsModel.query.all()[0]
+    return {'version': str(float(getattr(versions, column_name)))}
+
+
 def assert_valid_provider(provider):
     provider = provider.lower()
     supported_providers = get_supported_providers()
@@ -258,7 +269,10 @@ def make_response(content_dict, collection_name, element_name):
             json_to_xml(content_dict, collection_name, element_name),
             mimetype='application/xml;charset=utf-8')
     else:
-        content = {collection_name: content_dict}
+        if collection_name:
+            content = {collection_name: content_dict}
+        else:
+            content = content_dict
         return jsonify(**content)
 
 
@@ -348,7 +362,7 @@ def list_provider_resource_for_category(provider, region, category):
     assert_valid_category(category)
     resources = globals()['get_provider_%s_for_region' % (category)](
         provider, region)
-    return make_response(resources, category, catatory[:-1])
+    return make_response(resources, category, catetory[:-1])
 
 
 @app.route('/v1/<provider>/<category>', methods=['GET'])
@@ -359,6 +373,16 @@ def list_provider_resource(provider, category):
     assert_valid_category(category)
     resources = globals()['get_provider_%s' % (category)](provider)
     return make_response(resources, category, category[:-1])
+
+
+@app.route('/v1/<provider>/dataversion/<category>', methods=['GET'])
+@app.route('/v1/<provider>/dataversion/<category>.json', methods=['GET'])
+@app.route('/v1/<provider>/dataversion/<category>.xml', methods=['GET'])
+def get_provider_category_data_version(provider, category):
+    assert_valid_provider(provider)
+    assert_valid_category(category)
+    version = get_data_version_for_provider_category(provider, category)
+    return make_response(version, None, None)
 
 
 @app.route('/', methods=['GET'])

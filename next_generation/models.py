@@ -20,7 +20,6 @@ class ServerType(enum.Enum):
 
 
 class ProviderImageBase(object):
-    version = db.Column(db.Numeric)
     name = db.Column(db.String(255))
     state = db.Column(db.Enum(ImageState))
     replacementname = db.Column(db.String(255))
@@ -31,7 +30,6 @@ class ProviderImageBase(object):
 
 
 class ProviderServerBase(object):
-    version = db.Column(db.Date)
     type = db.Column(db.Enum(ServerType))
     name = db.Column(db.String(100))
     ip = db.Column(db.String(15), primary_key=True)
@@ -80,28 +78,12 @@ class AmazonServersModel(db.Model,  ProviderServerBase):
     __tablename__ = 'amazonservers'
 
 
-# FIXME(gyee): this table is currently broken. Need to
-# fix the import script
-class AlibabaServersModel(db.Model):
-    __tablename__ = 'alibabaservers'
-
-    version = db.Column(db.Date, primary_key=True)
-
-
 class GoogleServersModel(db.Model,  ProviderServerBase):
     __tablename__ = 'googleservers'
 
 
 class MicrosoftServersModel(db.Model, ProviderServerBase):
     __tablename__ = 'microsoftservers'
-
-
-# FIXME(gyee): this table is currently broken. Need to
-# fix the import script
-class OracleServersModel(db.Model):
-    __tablename__ = 'oracleservers'
-
-    version = db.Column(db.Date, primary_key=True)
 
 
 class AzureEnvironmentsModel(db.Model):
@@ -111,3 +93,15 @@ class AzureEnvironmentsModel(db.Model):
     environment = db.Column(db.String(100), primary_key=True)
     region = db.Column(db.String(100), primary_key=True)
     alternatename = db.Column(db.String(100), primary_key=True)
+
+class VersionsModel(db.Model):
+    __tablename__ = 'versions'
+
+    amazonservers = db.Column(db.Numeric, primary_key=True)
+    amazonimages = db.Column(db.Numeric)
+    googleservers = db.Column(db.Numeric)
+    googleimages = db.Column(db.Numeric)
+    oracleimages = db.Column(db.Numeric)
+    microsoftservers = db.Column(db.Numeric)
+    microsoftimages = db.Column(db.Numeric)
+    alibabaimages = db.Column(db.Numeric)
