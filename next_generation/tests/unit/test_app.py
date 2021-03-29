@@ -62,3 +62,27 @@ def test_get_provider_servers_types(client):
             assert 200 == rv.status_code
             assert expected_json == json.loads(rv.data)
 
+
+def test_get_alibaba_images(client):
+    mocked_return_value = [{"name": "sles-15-sp2-chost-byos-v20200831", "state": "deprecated","replacementname": "sles-15-sp2-chost-byos-v20200922","replacementid": "m-6we4qxbnt0bi5vu7q6p3", "publishedon": "20200831","deprecatedon": "20200922","region": "ap-northeast-1","id": "m-6we9exur1ya3zvpdocaq","deletedon": ""}]
+    expected_json = {'images': [
+        {
+            'name': 'sles-15-sp2-chost-byos-v20200831',
+            'state': 'deprecated',
+            'replacementname': 'sles-15-sp2-chost-byos-v20200922',
+            'replacementid': 'm-6we4qxbnt0bi5vu7q6p3',
+            'publishedon': '20200831',
+            'deprecatedon': '20200922',
+            'region': 'ap-northeast-1',
+            'id': 'm-6we9exur1ya3zvpdocaq',
+            'deletedon': ''
+        }
+    ]}
+    with mock.patch('app.assert_valid_provider'):
+        with mock.patch('app.get_provider_images',
+                return_value=mocked_return_value) as get_provider_images:
+            rv = client.get('/v1/alibaba/images')
+            get_provider_images.assert_called_with('alibaba')
+            assert 200 == rv.status_code
+            assert expected_json == json.loads(rv.data)
+
