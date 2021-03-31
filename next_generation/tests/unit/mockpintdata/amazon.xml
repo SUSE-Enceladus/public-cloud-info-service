@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<framework name="amazon">
+  <servers>
+    <server type="region" name="" ip="12.345.678.149" region="ap-southeast-2"/>
+    <server type="update" name="smt-ec2-mock.susecloud.net" ip="12.34.56.238" region="ap-south-1"/>
+    <server type="update" name="smt-ec2-mock.susecloud.net" ip="12.34.456.175" region="us-west-1"/>
+  </servers>
+  <images>
+    <image name="suse-sles-11-sp4-byos-v20150714-hvm-ssd-x86_64" state="deprecated" replacementname="suse-sles-11-sp4-byos-v20180104-hvm-ssd-x86_64" replacementid="ami-af5b0fc0" publishedon="20150714" deprecatedon="20180104" region="ap-south-1" id="ami-cdbed4a2" deletedon=""/>
+    <image name="suse-sles-11-sp4-byos-v20200609-hvm-ssd-x86_64" state="inactive" replacementname="" replacementid="" publishedon="20200609" deprecatedon="" region="ap-south-1" id="ami-0bb1ae2c9ad34e2fa" deletedon=""/>
+    <image name="suse-sles-11-sp4-v20160301-hvm-ssd-x86_64" state="deleted" replacementname="suse-sles-11-sp4-v20160804-hvm-ssd-x86_64" replacementid="ami-12285d7d" publishedon="20160301" deprecatedon="20160804" region="ap-south-1" id="ami-f9b9d396" deletedon="20200601"/>
+    <image name="suse-sles-15-sp2-chost-byos-v20210304-hvm-ssd-x86_64" state="active" replacementname="" replacementid="" publishedon="20210304" deprecatedon="" region="ap-south-1" id="ami-0714438ff2cb2b3ab" deletedon="" changeinfo="https://publiccloudimagechangeinfo.suse.com/amazon/suse-sles-15-sp2-chost-byos-v20210304-hvm-ssd-x86_64/"/>
+    <image name="suse-caasp-3-0-cluster-byos-v20190219-hvm-ssd-x86_64" state="deleted" replacementname="None" replacementid="None" publishedon="20190219" deprecatedon="20190506" region="us-west-1" id="ami-078e555b38d279958" deletedon="20190506"/>
+    <image name="suse-sles-15-sp1-chost-byos-v20210304-hvm-ssd-x86_64" state="inactive" replacementname="" replacementid="" publishedon="20210304" deprecatedon="" region="us-west-1" id="ami-01fec3ce0cb75a977" deletedon="" changeinfo="https://publiccloudimagechangeinfo.suse.com/amazon/suse-sles-15-sp1-chost-byos-v20210304-hvm-ssd-x86_64/"/>
+    <image name="suse-sles-15-sp2-chost-byos-v20210304-hvm-ssd-x86_64" state="active" replacementname="" replacementid="" publishedon="20210304" deprecatedon="" region="us-west-1" id="ami-0630fad1a23a4bd93" deletedon="" changeinfo="https://publiccloudimagechangeinfo.suse.com/amazon/suse-sles-15-sp2-chost-byos-v20210304-hvm-ssd-x86_64/"/>
+    <image name="suse-cap-deploy-byos-v20201211-hvm-ssd-x86_64" state="deprecated" replacementname="None" replacementid="None" publishedon="20201211" deprecatedon="20210111" region="us-west-1" id="ami-097c8616b4c76cf91" deletedon=""/>
+  </images>
+</framework>

@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<framework name="google">
+  <servers>
+    <server type="region" name="" ip="123.456.789.136" region="asia-east1"/>
+    <server type="region" name="" ip="12.345.678.56" region="asia-northeast1"/>
+    <server type="update" name="smt-gce-mock.susecloud.net" ip="12.34.56.233" region="asia-south1"/>
+    <server type="update" name="smt-gce-mock.susecloud.net" ip="12.34.56.235" region="asia-south1"/>
+    <server type="update" name="smt-gce-mock.susecloud.net" ip="12.34.56.174" region="asia-south1"/>
+    <server type="update" name="smt-gce-mock.susecloud.net" ip="12.34.56.189" region="us-west1"/>
+    <server type="update" name="smt-gce-mock.susecloud.net" ip="12.34.56.164" region="us-west1"/>
+    <server type="update" name="smt-gce-mock.susecloud.net" ip="12.34.56.82" region="us-west1"/>
+  </servers>
+  <images>
+    <image name="sles-15-sp1-chost-byos-v20191219" state="deleted" replacementname="sles-15-sp1-chost-byos-v20200220" publishedon="20191219" deprecatedon="20200220" deletedon="20200903" project="suse-byos-cloud"/>
+    <image name="sles-15-sp1-chost-byos-v20210202" state="deprecated" replacementname="sles-15-sp1-chost-byos-v20210304" publishedon="20210202" deprecatedon="20210304" deletedon="" project="suse-byos-cloud" changeinfo="https://publiccloudimagechangeinfo.suse.com/google/sles-15-sp1-chost-byos-v20210202/"/>
+    <image name="sles-15-sp1-chost-byos-v20210304" state="inactive" replacementname="" publishedon="20210304" deprecatedon="" deletedon="" project="suse-byos-cloud" changeinfo="https://publiccloudimagechangeinfo.suse.com/google/sles-15-sp1-chost-byos-v20210304/"/>
+    <image name="sles-15-sp2-chost-byos-v20210304" state="active" replacementname="" publishedon="20210304" deprecatedon="" deletedon="" project="suse-byos-cloud" changeinfo="https://publiccloudimagechangeinfo.suse.com/google/sles-15-sp2-chost-byos-v20210304/"/>
+  </images>
+</framework>

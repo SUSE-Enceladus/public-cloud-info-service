@@ -144,7 +144,7 @@ def get_formatted_dict(obj, extra_attrs=None, exclude_attrs=None):
     obj_dict = {}
     for attr in obj.__dict__.keys():
         if exclude_attrs and attr in exclude_attrs:
-            contineu
+            continue
         elif attr[0] == '_':
             continue
         else:
@@ -255,12 +255,12 @@ def assert_valid_provider(provider):
     provider = provider.lower()
     supported_providers = get_supported_providers()
     if provider not in supported_providers:
-        abort(404)
+        abort(Response('', status=404))
 
 
 def assert_valid_category(category):
     if category not in SUPPORTED_CATEGORIES:
-        abort(404)
+        abort(Response('', status=404))
 
 
 def make_response(content_dict, collection_name, element_name):
@@ -362,7 +362,7 @@ def list_provider_resource_for_category(provider, region, category):
     assert_valid_category(category)
     resources = globals()['get_provider_%s_for_region' % (category)](
         provider, region)
-    return make_response(resources, category, catetory[:-1])
+    return make_response(resources, category, category[:-1])
 
 
 @app.route('/v1/<provider>/<category>', methods=['GET'])
