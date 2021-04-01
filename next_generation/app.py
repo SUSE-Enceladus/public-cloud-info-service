@@ -144,7 +144,7 @@ def get_formatted_dict(obj, extra_attrs=None, exclude_attrs=None):
     obj_dict = {}
     for attr in obj.__dict__.keys():
         if exclude_attrs and attr in exclude_attrs:
-            contineu
+            continue
         elif attr[0] == '_':
             continue
         else:
@@ -182,11 +182,24 @@ def get_provider_servers_types(provider):
 
 
 def get_provider_regions(provider):
-    servers = PROVIDER_SERVERS_MODEL_MAP[provider].query.with_entities(
-        PROVIDER_SERVERS_MODEL_MAP[provider].region).distinct(
-            PROVIDER_SERVERS_MODEL_MAP[provider].region)
-    return [{'name': server.region} for server in servers]
-
+    servers = []
+    images = []
+    region_list = [] # Combination list 
+    if PROVIDER_SERVERS_MODEL_MAP.get(provider) != None:
+        servers = PROVIDER_SERVERS_MODEL_MAP[provider].query.with_entities(
+            PROVIDER_SERVERS_MODEL_MAP[provider].region).distinct(
+                PROVIDER_SERVERS_MODEL_MAP[provider].region)
+    if hasattr(PROVIDER_IMAGES_MODEL_MAP[provider], 'region'):
+        images = PROVIDER_IMAGES_MODEL_MAP[provider].query.with_entities(
+            PROVIDER_IMAGES_MODEL_MAP[provider].region).distinct(
+                PROVIDER_IMAGES_MODEL_MAP[provider].region)
+    for server in servers:
+        if server.region not in region_list:
+            region_list.append(server.region)
+    for image in images:
+        if image.region not in region_list:
+            region_list.append(image.region)
+    return [{'name': r } for r in region_list]
 
 def _get_azure_images_for_region_state(region, state):
     # first lookup the environment for the given region
@@ -255,12 +268,12 @@ def assert_valid_provider(provider):
     provider = provider.lower()
     supported_providers = get_supported_providers()
     if provider not in supported_providers:
-        abort(404)
+        abort(Response('', status=404))
 
 
 def assert_valid_category(category):
     if category not in SUPPORTED_CATEGORIES:
-        abort(404)
+        abort(Response('', status=404))
 
 
 def make_response(content_dict, collection_name, element_name):
@@ -362,7 +375,7 @@ def list_provider_resource_for_category(provider, region, category):
     assert_valid_category(category)
     resources = globals()['get_provider_%s_for_region' % (category)](
         provider, region)
-    return make_response(resources, category, catetory[:-1])
+    return make_response(resources, category, category[:-1])
 
 
 @app.route('/v1/<provider>/<category>', methods=['GET'])
