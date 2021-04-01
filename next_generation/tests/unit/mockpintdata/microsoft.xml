@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<framework name="microsoft">
+  <servers>
+    <server type="region" name="" ip="12.34.56.229" region="West US"/>
+    <server type="region" name="" ip="12.34.56.250" region="Southeast Asia"/>
+    <server type="update" name="smt-azure-mock.susecloud.net" ip="12.34.56.47" region="southeastasia"/>
+    <server type="update" name="smt-azure-mock.susecloud.net" ip="12.34.56.123" region="westus"/>
+  </servers>
+  <environments>
+    <environment name="PublicAzure">
+      <region name="westus">
+        <alternate name="West US"/>
+        <alternate name="uswest"/>
+      </region>
+      <region name="southeastasia">
+        <alternate name="Southeast Asia"/>
+        <alternate name="asiasoutheast"/>
+      </region>
+    </environment>
+  </environments>
+  <images>
+    <image name="b4590d9e3ed742e4a1d46e5424aa335e__SUSE-Linux-Enterprise-Server-11-SP2-v201" state="deleted" replacementname="b4590d9e3ed742e4a1d46e5424aa335e__SUSE-Linux-Enterprise-Server-11-SP3-v202" publishedon="20131202" deprecatedon="20141230" deletedon="20150629" environment="PublicAzure"/>
+    <image name="021d1b90c82943ec959408cff8e26c37__suse-opensuse-leap-15-2-v20200702" state="active" environment="PublicAzure" replacementname="" publishedon="20200713" deprecatedon="" deletedon="" urn="suse:opensuse-leap:15-2:2020.07.02"/>
+    <image name="suse-sles-sap-15-v20200713-gen2" state="deprecated" environment="PublicAzure" replacementname="suse-sles-sap-15-v20210112" publishedon="20200713" deprecatedon="20210113" deletedon="" urn="suse:sles-sap:gen2-15:2020.07.13"/>
+    <image name="suse-sles-sap-12-sp4-byos-v20210218-12-sp4-gen2" state="inactive" environment="PublicAzure" replacementname="" publishedon="20210222" deprecatedon="" deletedon="" urn="suse:sles-sap-byos:12-sp4-gen2:2021.02.18" changeinfo="https://publiccloudimagechangeinfo.suse.com/microsoft/suse-sles-sap-12-sp4-byos-v20210218"/>
+  </images>
+</framework>

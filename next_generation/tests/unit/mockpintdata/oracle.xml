@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<framework name="oracle">
+  <servers/>
+  <images>
+    <image name="sles-15-byos-v20200131" id="ocid1.image.oc1..aaaaaaaafycfj2buhzkqlmh4atkojr37dtz5zfmzxhd6eftlwuwhqog3yrfa" state="deleted"    replacementname="sles-15-byos-v20200722" replacementid="ocid1.image.oc1..aaaaaaaaladeu34e37qyokodbw5uzm5tpfdnt7nmv7wnazfvpsj24a5rel3q" publishedon="20200205" deprecatedon="20200729" deletedon="20210219"/>
+    <image name="sles-15-byos-v20210219" id="ocid1.image.oc1..aaaaaaaa7t6t2rukr4wz2pbqgbvxyx6snq34lhyswvvopgk4buh5sx3td5lq" state="deprecated" replacementname="sles-15-byos-v20210303" replacementid="ocid1.image.oc1..aaaaaaaav2akvttfrgwpiw6x7tztveriqkxtjnzi5hibkyluj7wcm72ihi5q" publishedon="20210219" deprecatedon="20210308" deletedon=""/>
+    <image name="sles-15-byos-v20210303" id="ocid1.image.oc1..aaaaaaaav2akvttfrgwpiw6x7tztveriqkxtjnzi5hibkyluj7wcm72ihi5q" state="inactive" replacementname="" replacementid="" publishedon="20210308" deprecatedon="" deletedon="" changeinfo="https://publiccloudimagechangeinfo.suse.com/oracle/sles-15-byos-v20210303/"/>
+    <image name="sles-15-sp2-byos-v20210303" id="ocid1.image.oc1..aaaaaaaazm4ubmss5zbw2uxwlgali22wpxkm6vlkzb7yyh6j7zanq5pz5cxq" state="active" replacementname="" replacementid="" publishedon="20210308" deprecatedon="" deletedon="" changeinfo="https://publiccloudimagechangeinfo.suse.com/oracle/sles-15-sp2-byos-v20210303/"/>
+  </images>
+</framework>

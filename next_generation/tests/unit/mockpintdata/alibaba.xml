@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<framework name="alibaba">
+  <servers/>
+  <images>
+    <image name="sles-15-sp2-chost-byos-v20200831" state="deprecated" replacementname="sles-15-sp2-chost-byos-v20200922" replacementid="m-a2dibd7qoiv22dqi9qcq" publishedon="20200831" deprecatedon="20200922" region="ap-south-1" id="m-a2d89803w3icykg3z29f" deletedon=""/>
+    <image name="sles-15-sp2-chost-byos-v20200831" state="deprecated" replacementname="sles-15-sp2-chost-byos-v20200922" replacementid="m-rj9hc9ky50i3dpqrzqly" publishedon="20200831" deprecatedon="20200922" region="us-west-1" id="m-rj94h6m9spidja6e9tn9" deletedon=""/>
+    <image name="sles-15-sp2-chost-byos-v20200922" state="deprecated" replacementname="sles-15-sp2-chost-byos-v20201016" replacementid="m-rj93phj1mev5csisdn0p" publishedon="20200922" deprecatedon="20201016" region="us-west-1" id="m-rj9hc9ky50i3dpqrzqly" deletedon=""/>
+  </images>
+</framework>

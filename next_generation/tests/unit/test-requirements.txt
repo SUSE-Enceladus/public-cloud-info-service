@@ -1,0 +1,6 @@
+pytest
+mock
+Flask
+Flask-CORS
+Flask-SQLAlchemy
+lxml
