@@ -1,14 +1,15 @@
 #!/bin/bash
 
+VENV_NAME=dev_venv
 MYNAME=$0
 CURRENTDIR=$(dirname $(readlink -e $MYNAME))
 # get the source code directory
 SRCDIR=$(dirname $CURRENTDIR)
 
 if [[ "$VIRTUAL_ENV" == "" ]] ; then
-    if [[ ! -f "${SRCDIR}/python/bin/activate" ]] ; then
-        virtualenv $SRCDIR/python --python=python3
+    if [[ ! -f "${SRCDIR}/${VENV_NAME}/bin/activate" ]] ; then
+        virtualenv $SRCDIR/$VENV_NAME --python=python3
     fi
-    . $SRCDIR/python/bin/activate
+    . $SRCDIR/$VENV_NAME/bin/activate
     pip install -q -r $SRCDIR/requirements.txt
 fi

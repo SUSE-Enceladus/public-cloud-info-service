@@ -1,7 +1,7 @@
 import enum
 import os
 
-from app import db
+from pint_server.app import db
 
 
 class ImageState(enum.Enum):

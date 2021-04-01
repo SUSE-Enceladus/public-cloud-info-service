@@ -60,12 +60,13 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
 
-from models import ImageState, AmazonImagesModel, OracleImagesModel, \
-                   AlibabaImagesModel, MicrosoftImagesModel, \
-                   GoogleImagesModel, AmazonServersModel, \
-                   MicrosoftServersModel, GoogleServersModel, \
-                   ServerType, VersionsModel, \
-                   AzureEnvironmentsModel
+from pint_server.models import ImageState, AmazonImagesModel, \
+                               OracleImagesModel, \
+                               AlibabaImagesModel, MicrosoftImagesModel, \
+                               GoogleImagesModel, AmazonServersModel, \
+                               MicrosoftServersModel, GoogleServersModel, \
+                               ServerType, VersionsModel, \
+                               AzureEnvironmentsModel
 
 
 CACHE_PROVIDERS = None

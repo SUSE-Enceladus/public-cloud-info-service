@@ -4,7 +4,7 @@ import pytest
 
 os.environ = mock.MagicMock()
 
-import app
+from pint_server import app
 
 @pytest.fixture(scope='session')
 def client():

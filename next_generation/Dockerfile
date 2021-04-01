@@ -1,6 +1,7 @@
 FROM public.ecr.aws/lambda/python:3.6
 
-COPY serverless_app.py app.py models.py .staging/requirements.txt ./
+COPY serverless_app.py .staging/requirements.txt ./
+COPY pint_server ./
 COPY .staging/ /
 
 # Add AWS RDS trusted certificate chain to SSL/TLS connection to the

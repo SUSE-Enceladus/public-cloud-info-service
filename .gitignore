@@ -1,6 +1,11 @@
 Gemfile*.lock
 *.tar.bz2
-python
+python/
 __pycache__
-.aws-sam
-.staging
+.aws-sam/
+.staging/
+build/
+dist/
+*.pyc
+*.egg*/
+*_venv/
