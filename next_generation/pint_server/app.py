@@ -1,3 +1,4 @@
+import datetime
 import os
 from decimal import Decimal
 from flask import abort, Flask, jsonify, make_response, request, redirect, \
@@ -156,6 +157,8 @@ def get_formatted_dict(obj, extra_attrs=None, exclude_attrs=None):
                 obj_dict[attr] = obj.state.value
             elif isinstance(value, ServerType):
                 obj_dict[attr] = obj.type.value
+            elif isinstance(value, datetime.date):
+                obj_dict[attr] = value.strftime('%a, %d %b %Y %H:%M:%S GMT')
             else:
                 obj_dict[attr] = null_to_empty(value)
     if extra_attrs:

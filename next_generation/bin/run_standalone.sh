@@ -23,4 +23,4 @@ export POSTGRES_HOST=127.0.0.1
 
 export FLASK_ENV=development
 
-env FLASK_APP=$SRCDIR/app.py flask run
+env FLASK_APP=$SRCDIR/pint_server/app.py flask run
