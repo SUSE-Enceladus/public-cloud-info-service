@@ -158,7 +158,7 @@ def get_formatted_dict(obj, extra_attrs=None, exclude_attrs=None):
             elif isinstance(value, ServerType):
                 obj_dict[attr] = obj.type.value
             elif isinstance(value, datetime.date):
-                obj_dict[attr] = value.strftime('%a, %d %b %Y %H:%M:%S GMT')
+                obj_dict[attr] = value.strftime('%Y%m%d')
             else:
                 obj_dict[attr] = null_to_empty(value)
     if extra_attrs:
@@ -167,21 +167,27 @@ def get_formatted_dict(obj, extra_attrs=None, exclude_attrs=None):
 
 
 def get_provider_servers_for_region_and_type(provider, region, server_type):
-    servers = PROVIDER_SERVERS_MODEL_MAP[provider].query.filter(
-        PROVIDER_SERVERS_MODEL_MAP[provider].region == region,
-        PROVIDER_SERVERS_MODEL_MAP[provider].type == server_type)
+    servers = []
+    if PROVIDER_SERVERS_MODEL_MAP.get(provider) != None:
+        servers = PROVIDER_SERVERS_MODEL_MAP[provider].query.filter(
+            PROVIDER_SERVERS_MODEL_MAP[provider].region == region,
+            PROVIDER_SERVERS_MODEL_MAP[provider].type == server_type)
     return [get_formatted_dict(server) for server in servers]
 
 
 def get_provider_servers_for_type(provider, server_type):
-    servers = PROVIDER_SERVERS_MODEL_MAP[provider].query.filter(
-        PROVIDER_SERVERS_MODEL_MAP[provider].type == server_type)
+    servers = []
+    if PROVIDER_SERVERS_MODEL_MAP.get(provider) != None:
+        servers = PROVIDER_SERVERS_MODEL_MAP[provider].query.filter(
+            PROVIDER_SERVERS_MODEL_MAP[provider].type == server_type)
     return [get_formatted_dict(server) for server in servers]
 
 
 def get_provider_servers_types(provider):
-    servers = PROVIDER_SERVERS_MODEL_MAP[provider].query.distinct(
-        PROVIDER_SERVERS_MODEL_MAP[provider].type)
+    servers = []
+    if PROVIDER_SERVERS_MODEL_MAP.get(provider) != None:
+        servers = PROVIDER_SERVERS_MODEL_MAP[provider].query.distinct(
+            PROVIDER_SERVERS_MODEL_MAP[provider].type)
     return [{'name': server.type.value} for server in servers]
 
 
@@ -225,12 +231,15 @@ def _get_azure_images_for_region_state(region, state):
 
 
 def get_provider_images_for_region_and_state(provider, region, state):
+    images = []
     if provider == 'microsoft':
         return _get_azure_images_for_region_state(region, state)
 
-    images = PROVIDER_IMAGES_MODEL_MAP[provider].query.filter(
-        PROVIDER_IMAGES_MODEL_MAP[provider].region == region,
-        PROVIDER_IMAGES_MODEL_MAP[provider].state == state)
+    if hasattr(PROVIDER_IMAGES_MODEL_MAP[provider], 'region') \
+            and hasattr(PROVIDER_IMAGES_MODEL_MAP[provider], 'state'):
+        images = PROVIDER_IMAGES_MODEL_MAP[provider].query.filter(
+            PROVIDER_IMAGES_MODEL_MAP[provider].region == region,
+            PROVIDER_IMAGES_MODEL_MAP[provider].state == state)
     return [get_formatted_dict(image) for image in images]
 
 
@@ -241,19 +250,25 @@ def get_provider_images_for_state(provider, state):
 
 
 def get_provider_servers_for_region(provider, region):
-    servers = PROVIDER_SERVERS_MODEL_MAP[provider].query.filter(
-        PROVIDER_SERVERS_MODEL_MAP[provider].region == region)
+    servers = []
+    if PROVIDER_SERVERS_MODEL_MAP.get(provider) != None:
+        servers = PROVIDER_SERVERS_MODEL_MAP[provider].query.filter(
+            PROVIDER_SERVERS_MODEL_MAP[provider].region == region)
     return [get_formatted_dict(server) for server in servers]
 
 
 def get_provider_images_for_region(provider, region):
-    images = PROVIDER_IMAGES_MODEL_MAP[provider].query.filter(
-        PROVIDER_IMAGES_MODEL_MAP[provider].region == region)
+    images = []
+    if hasattr(PROVIDER_IMAGES_MODEL_MAP[provider], 'region'):
+        images = PROVIDER_IMAGES_MODEL_MAP[provider].query.filter(
+            PROVIDER_IMAGES_MODEL_MAP[provider].region == region)
     return [get_formatted_dict(image) for image in images]
 
 
 def get_provider_servers(provider):
-    servers = PROVIDER_SERVERS_MODEL_MAP[provider].query.all()
+    servers = []
+    if PROVIDER_SERVERS_MODEL_MAP.get(provider) != None:
+        servers = PROVIDER_SERVERS_MODEL_MAP[provider].query.all()
     return [get_formatted_dict(server) for server in servers]
 
 
