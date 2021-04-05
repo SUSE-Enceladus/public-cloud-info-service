@@ -168,19 +168,28 @@ def get_formatted_dict(obj, extra_attrs=None, exclude_attrs=None):
 
 def get_provider_servers_for_region_and_type(provider, region, server_type):
     servers = []
-    if PROVIDER_SERVERS_MODEL_MAP.get(provider) != None:
-        servers = PROVIDER_SERVERS_MODEL_MAP[provider].query.filter(
-            PROVIDER_SERVERS_MODEL_MAP[provider].region == region,
-            PROVIDER_SERVERS_MODEL_MAP[provider].type == server_type)
-    return [get_formatted_dict(server) for server in servers]
+    region_names = []
+    for each in get_provider_regions(provider):
+        region_names.append(each['name'])
+    if PROVIDER_SERVERS_MODEL_MAP.get(provider) != None and \
+        server_type in get_provider_servers_types(provider) and region in region_names:
+            servers = PROVIDER_SERVERS_MODEL_MAP[provider].query.filter(
+                PROVIDER_SERVERS_MODEL_MAP[provider].region == region,
+                PROVIDER_SERVERS_MODEL_MAP[provider].type == server_type)
+            return [get_formatted_dict(server) for server in servers]
+    else:
+        abort(Response('', status=404))
 
 
 def get_provider_servers_for_type(provider, server_type):
     servers = []
-    if PROVIDER_SERVERS_MODEL_MAP.get(provider) != None:
-        servers = PROVIDER_SERVERS_MODEL_MAP[provider].query.filter(
-            PROVIDER_SERVERS_MODEL_MAP[provider].type == server_type)
-    return [get_formatted_dict(server) for server in servers]
+    if PROVIDER_SERVERS_MODEL_MAP.get(provider) != None and \
+        server_type in get_provider_servers_types(provider):
+            servers = PROVIDER_SERVERS_MODEL_MAP[provider].query.filter(
+                PROVIDER_SERVERS_MODEL_MAP[provider].type == server_type)
+            return [get_formatted_dict(server) for server in servers]
+    else:
+        abort(Response('', status=404))
 
 
 def get_provider_servers_types(provider):
@@ -194,7 +203,7 @@ def get_provider_servers_types(provider):
 def get_provider_regions(provider):
     servers = []
     images = []
-    region_list = [] # Combination list 
+    region_list = [] # Combination list
     if PROVIDER_SERVERS_MODEL_MAP.get(provider) != None:
         servers = PROVIDER_SERVERS_MODEL_MAP[provider].query.with_entities(
             PROVIDER_SERVERS_MODEL_MAP[provider].region).distinct(
@@ -235,33 +244,57 @@ def get_provider_images_for_region_and_state(provider, region, state):
     if provider == 'microsoft':
         return _get_azure_images_for_region_state(region, state)
 
-    if hasattr(PROVIDER_IMAGES_MODEL_MAP[provider], 'region') \
+    if hasattr(PROVIDER_IMAGES_MODEL_MAP[provider], 'region')\
             and hasattr(PROVIDER_IMAGES_MODEL_MAP[provider], 'state'):
-        images = PROVIDER_IMAGES_MODEL_MAP[provider].query.filter(
-            PROVIDER_IMAGES_MODEL_MAP[provider].region == region,
-            PROVIDER_IMAGES_MODEL_MAP[provider].state == state)
-    return [get_formatted_dict(image) for image in images]
+        region_names = []
+        for each in get_provider_regions(provider):
+            region_names.append(each['name'])
+        if state in ImageState.__members__ and region in region_names:
+            images = PROVIDER_IMAGES_MODEL_MAP[provider].query.filter(
+                PROVIDER_IMAGES_MODEL_MAP[provider].region == region,
+                PROVIDER_IMAGES_MODEL_MAP[provider].state == state)
+            return [get_formatted_dict(image) for image in images]
+        else:
+            abort(Response('', status=404))
+    else:
+        abort(Response('', status=404))
 
 
 def get_provider_images_for_state(provider, state):
-    images = PROVIDER_IMAGES_MODEL_MAP[provider].query.filter(
-        PROVIDER_IMAGES_MODEL_MAP[provider].state == state)
+    if state in ImageState.__members__:
+        images = PROVIDER_IMAGES_MODEL_MAP[provider].query.filter(
+            PROVIDER_IMAGES_MODEL_MAP[provider].state == state)
+    else:
+        abort(Response('', status=404))
     return [get_formatted_dict(image) for image in images]
+
 
 
 def get_provider_servers_for_region(provider, region):
     servers = []
-    if PROVIDER_SERVERS_MODEL_MAP.get(provider) != None:
-        servers = PROVIDER_SERVERS_MODEL_MAP[provider].query.filter(
-            PROVIDER_SERVERS_MODEL_MAP[provider].region == region)
+    region_names = []
+    for each in get_provider_regions(provider):
+        region_names.append(each['name'])
+    if region in region_names:
+        if PROVIDER_SERVERS_MODEL_MAP.get(provider) != None:
+            servers = PROVIDER_SERVERS_MODEL_MAP[provider].query.filter(
+                PROVIDER_SERVERS_MODEL_MAP[provider].region == region)
+    else:
+        abort(Response('', status=404))
     return [get_formatted_dict(server) for server in servers]
 
 
 def get_provider_images_for_region(provider, region):
     images = []
-    if hasattr(PROVIDER_IMAGES_MODEL_MAP[provider], 'region'):
-        images = PROVIDER_IMAGES_MODEL_MAP[provider].query.filter(
-            PROVIDER_IMAGES_MODEL_MAP[provider].region == region)
+    region_names = []
+    for each in get_provider_regions(provider):
+        region_names.append(each['name'])
+    if region in region_names:
+        if hasattr(PROVIDER_IMAGES_MODEL_MAP[provider], 'region'):
+            images = PROVIDER_IMAGES_MODEL_MAP[provider].query.filter(
+                PROVIDER_IMAGES_MODEL_MAP[provider].region == region)
+    else:
+        abort(Response('', status=404))
     return [get_formatted_dict(image) for image in images]
 
 
@@ -280,6 +313,10 @@ def get_provider_images(provider):
 def get_data_version_for_provider_category(provider, category):
     column_name = provider + category
     versions = VersionsModel.query.all()[0]
+    try:
+        getattr(versions, column_name)
+    except AttributeError:
+        abort(Response('', status=404))
     return {'version': str(float(getattr(versions, column_name)))}
 
 
