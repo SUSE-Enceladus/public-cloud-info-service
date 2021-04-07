@@ -15,7 +15,7 @@ if 'POSTGRES_PASSWORD' not in os.environ and 'DATABASE_URI' not in os.environ:
     os.environ['POSTGRES_PASSWORD'] = auth_token
 
 
-import app
+import pint_server.app
 import serverless_wsgi
 
 
@@ -26,4 +26,4 @@ import serverless_wsgi
 
 
 def handler(event, context):
-    return serverless_wsgi.handle_request(app.app, event, context)
+    return serverless_wsgi.handle_request(pint_server.app.app, event, context)
