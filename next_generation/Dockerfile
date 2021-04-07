@@ -1,12 +1,16 @@
 FROM public.ecr.aws/lambda/python:3.6
 
-COPY serverless_app.py .staging/requirements.txt ./
-COPY pint_server ./
+COPY serverless_app.py requirements.txt ./
+RUN mkdir -p ./pint_server
+
+COPY pint_server/. ./pint_server
+
+
 COPY .staging/ /
 
 # Add AWS RDS trusted certificate chain to SSL/TLS connection to the
 # RDS instance
-ADD https://s3.amazonaws.com/rds-downloads/rds-combined-ca-bundle.pem /var/task/
+ADD https://s3.amazonaws.com/rds-downloads/rds-combined-ca-bundle.pem ./
 
 RUN python3.6 -m pip install -r requirements.txt -t .
 
