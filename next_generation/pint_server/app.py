@@ -1,5 +1,4 @@
 import datetime
-import os
 from decimal import Decimal
 from flask import abort, Flask, jsonify, make_response, request, redirect, \
                   Response
@@ -9,38 +8,18 @@ from sqlalchemy import text, or_
 from xml.dom import minidom
 import xml.etree.ElementTree as ET
 
-
-def get_environ_or_bust(key_name):
-    assert key_name in os.environ, 'Environment variable %s is required.' % (
-        key_name)
-    return os.environ.get(key_name)
-
-def create_postgres_url_from_env():
-    db_user = get_environ_or_bust('POSTGRES_USER')
-    db_password = get_environ_or_bust('POSTGRES_PASSWORD')
-    db_name = get_environ_or_bust('POSTGRES_DB')
-    db_host = get_environ_or_bust('POSTGRES_HOST')
-    db_ssl_mode = os.environ.get('POSTGRES_SSL_MODE', None)
-    db_root_cert = os.environ.get('POSTGRES_SSL_ROOT_CERTIFICATE', None)
-    ssl_mode = ''
-    if db_ssl_mode:
-        # see https://www.postgresql.org/docs/11/libpq-connect.html#LIBPQ-CONNECT-SSLMODE
-        ssl_mode = '?sslmode=%s' % (db_ssl_mode)
-        if db_root_cert:
-            ssl_mode += '&sslrootcert=%s' % (db_root_cert)
-
-    return 'postgresql://%(user)s:%(password)s@%(host)s:5432/%(db)s%(ssl)s' % {
-        'user': db_user,
-        'password': db_password,
-        'db': db_name,
-        'host': db_host,
-        'ssl': ssl_mode}
-
-
-null_to_empty = lambda s : s or ''
+from pint_server.database import engine, init_db, db_session
+from pint_server.models import ImageState, AmazonImagesModel, \
+                               OracleImagesModel, \
+                               AlibabaImagesModel, MicrosoftImagesModel, \
+                               GoogleImagesModel, AmazonServersModel, \
+                               MicrosoftServersModel, GoogleServersModel, \
+                               ServerType, VersionsModel, \
+                               MicrosoftRegionMapModel
 
 
 app = Flask(__name__)
+init_db()
 
 cors_config = {
     "origins": ["*"]
@@ -49,26 +28,11 @@ CORS(app, resources={
     r"/*": cors_config
 })
 
-if os.environ.get('DATABASE_URI', None):
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ['DATABASE_URI']
-else:
-    # FIXME(gyee): assume PostgresSQL URI for now. Otherwise, we'll need
-    # to use 'DATABASE_URI' instead.
-    app.config['SQLALCHEMY_DATABASE_URI'] = create_postgres_url_from_env()
-
 # we don't care about modifications as we are doing DB read only
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-db = SQLAlchemy(app)
 
 
-from pint_server.models import ImageState, AmazonImagesModel, \
-                               OracleImagesModel, \
-                               AlibabaImagesModel, MicrosoftImagesModel, \
-                               GoogleImagesModel, AmazonServersModel, \
-                               MicrosoftServersModel, GoogleServersModel, \
-                               ServerType, VersionsModel, \
-                               AzureEnvironmentsModel
-
+null_to_empty = lambda s : s or ''
 
 CACHE_PROVIDERS = None
 
@@ -112,7 +76,7 @@ def query_providers():
     sql_stat = text("select regexp_replace(table_name, 'servers|images', '') "
                     "from information_schema.tables where "
                     "table_schema = 'public' and table_name like '%images'")
-    result = db.engine.execute(sql_stat)
+    result = engine.execute(sql_stat)
     CACHE_PROVIDERS = [row[0] for row in result]
     return CACHE_PROVIDERS
 
@@ -166,21 +130,6 @@ def get_formatted_dict(obj, extra_attrs=None, exclude_attrs=None):
     return obj_dict
 
 
-def get_provider_servers_for_region_and_type(provider, region, server_type):
-    servers = []
-    region_names = []
-    for each in get_provider_regions(provider):
-        region_names.append(each['name'])
-    if PROVIDER_SERVERS_MODEL_MAP.get(provider) != None and \
-        server_type in get_provider_servers_types(provider) and region in region_names:
-            servers = PROVIDER_SERVERS_MODEL_MAP[provider].query.filter(
-                PROVIDER_SERVERS_MODEL_MAP[provider].region == region,
-                PROVIDER_SERVERS_MODEL_MAP[provider].type == server_type)
-            return [get_formatted_dict(server) for server in servers]
-    else:
-        abort(Response('', status=404))
-
-
 def get_provider_servers_for_type(provider, server_type):
     servers = []
     if PROVIDER_SERVERS_MODEL_MAP.get(provider) != None and \
@@ -220,11 +169,40 @@ def get_provider_regions(provider):
             region_list.append(image.region)
     return [{'name': r } for r in region_list]
 
+
+def _get_azure_servers(region, server_type=None):
+    # first lookup canonical name for the given region
+    environments = MicrosoftRegionMapModel.query.filter(
+        or_(MicrosoftRegionMapModel.region == region,
+            MicrosoftRegionMapModel.canonicalname == region))
+
+    # then get all the regions with the canonical name
+    environments = MicrosoftRegionMapModel.query.filter(
+        MicrosoftRegionMapModel.canonicalname == environments[0].canonicalname)
+
+    # get all the possible names for the region
+    all_regions = []
+    for environment in environments:
+        if environment.region not in all_regions:
+            all_regions.append(environment.region)
+
+    # get all the severs for that region
+    if server_type:
+        servers = MicrosoftServersModel.query.filter(
+            MicrosoftServersModel.type == server_type,
+            MicrosoftServersModel.region.in_(all_regions))
+    else:
+        servers = MicrosoftServersModel.query.filter(
+            MicrosoftServersModel.region.in_(all_regions))
+    return [
+        get_formatted_dict(server) for server in servers]
+
+
 def _get_azure_images_for_region_state(region, state):
     # first lookup the environment for the given region
-    environments = AzureEnvironmentsModel.query.filter(
-        or_(AzureEnvironmentsModel.region == region,
-            AzureEnvironmentsModel.alternatename == region))
+    environments = MicrosoftRegionMapModel.query.filter(
+        or_(MicrosoftRegionMapModel.region == region,
+            MicrosoftRegionMapModel.canonicalname == region))
 
     # assume the environment is unique per region
     environment_name = environments[0].environment
@@ -272,6 +250,9 @@ def get_provider_images_for_state(provider, state):
 
 def get_provider_servers_for_region(provider, region):
     servers = []
+    if provider == 'microsoft':
+        return _get_azure_servers(region)
+    
     region_names = []
     for each in get_provider_regions(provider):
         region_names.append(each['name'])
@@ -281,7 +262,26 @@ def get_provider_servers_for_region(provider, region):
                 PROVIDER_SERVERS_MODEL_MAP[provider].region == region)
     else:
         abort(Response('', status=404))
+
     return [get_formatted_dict(server) for server in servers]
+
+
+def get_provider_servers_for_region_and_type(provider, region, server_type):
+    servers = []
+    if provider == 'microsoft':
+        return _get_azure_servers(region, server_type)
+
+    region_names = []
+    for each in get_provider_regions(provider):
+        region_names.append(each['name'])
+    if PROVIDER_SERVERS_MODEL_MAP.get(provider) != None and \
+        server_type in get_provider_servers_types(provider) and region in region_names:
+            servers = PROVIDER_SERVERS_MODEL_MAP[provider].query.filter(
+                PROVIDER_SERVERS_MODEL_MAP[provider].region == region,
+                PROVIDER_SERVERS_MODEL_MAP[provider].type == server_type)
+            return [get_formatted_dict(server) for server in servers]
+    else:
+        abort(Response('', status=404))
 
 
 def get_provider_images_for_region(provider, region):
@@ -467,6 +467,11 @@ def redirect_to_public_cloud():
 @app.route('/<path:path>')
 def catch_all(path):
     abort(Response('', status=400))
+
+
+@app.teardown_appcontext
+def shutdown_session(exception=None):
+    db_session.remove()
 
 
 if __name__ == '__main__':
