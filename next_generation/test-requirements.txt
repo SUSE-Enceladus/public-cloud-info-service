@@ -4,3 +4,4 @@ Flask
 Flask-CORS
 Flask-SQLAlchemy
 lxml
+requests
