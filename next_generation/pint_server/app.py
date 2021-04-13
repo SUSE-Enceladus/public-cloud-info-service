@@ -5,6 +5,7 @@ from flask import abort, Flask, jsonify, make_response, request, redirect, \
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import text, or_
+from sqlalchemy.exc import DataError
 from xml.dom import minidom
 import xml.etree.ElementTree as ET
 
@@ -30,7 +31,6 @@ CORS(app, resources={
 
 # we don't care about modifications as we are doing DB read only
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
 
 null_to_empty = lambda s : s or ''
 
@@ -132,10 +132,13 @@ def get_formatted_dict(obj, extra_attrs=None, exclude_attrs=None):
 
 def get_provider_servers_for_type(provider, server_type):
     servers = []
-    if PROVIDER_SERVERS_MODEL_MAP.get(provider) != None:
-        servers = PROVIDER_SERVERS_MODEL_MAP[provider].query.filter(
-            PROVIDER_SERVERS_MODEL_MAP[provider].type == server_type)
-    return [get_formatted_dict(server) for server in servers]
+    if PROVIDER_SERVERS_MODEL_MAP.get(provider) != None and \
+        server_type in get_provider_servers_types(provider):
+            servers = PROVIDER_SERVERS_MODEL_MAP[provider].query.filter(
+                PROVIDER_SERVERS_MODEL_MAP[provider].type == server_type)
+            return [get_formatted_dict(server) for server in servers]
+    else:
+        abort(Response('', status=404))
 
 
 def get_provider_servers_types(provider):
@@ -149,7 +152,7 @@ def get_provider_servers_types(provider):
 def get_provider_regions(provider):
     servers = []
     images = []
-    region_list = [] # Combination list 
+    region_list = [] # Combination list
     if PROVIDER_SERVERS_MODEL_MAP.get(provider) != None:
         servers = PROVIDER_SERVERS_MODEL_MAP[provider].query.with_entities(
             PROVIDER_SERVERS_MODEL_MAP[provider].region).distinct(
@@ -169,13 +172,16 @@ def get_provider_regions(provider):
 
 def _get_azure_servers(region, server_type=None):
     # first lookup canonical name for the given region
-    environments = MicrosoftRegionMapModel.query.filter(
+    environment = MicrosoftRegionMapModel.query.filter(
         or_(MicrosoftRegionMapModel.region == region,
-            MicrosoftRegionMapModel.canonicalname == region))
+            MicrosoftRegionMapModel.canonicalname == region)).first()
+
+    if not environment:
+        abort(Response('', status=404))
 
     # then get all the regions with the canonical name
     environments = MicrosoftRegionMapModel.query.filter(
-        MicrosoftRegionMapModel.canonicalname == environments[0].canonicalname)
+        MicrosoftRegionMapModel.canonicalname == environment.canonicalname)
 
     # get all the possible names for the region
     all_regions = []
@@ -191,18 +197,25 @@ def _get_azure_servers(region, server_type=None):
     else:
         servers = MicrosoftServersModel.query.filter(
             MicrosoftServersModel.region.in_(all_regions))
-    return [
-        get_formatted_dict(server) for server in servers]
+
+    try:
+        return [
+            get_formatted_dict(server) for server in servers]
+    except DataError:
+        abort(Response('', status=404))
 
 
 def _get_azure_images_for_region_state(region, state):
     # first lookup the environment for the given region
-    environments = MicrosoftRegionMapModel.query.filter(
+    environment = MicrosoftRegionMapModel.query.filter(
         or_(MicrosoftRegionMapModel.region == region,
-            MicrosoftRegionMapModel.canonicalname == region))
+            MicrosoftRegionMapModel.canonicalname == region)).first()
+
+    if not environment:
+        abort(Response('', status=404))
 
     # assume the environment is unique per region
-    environment_name = environments[0].environment
+    environment_name = environment.environment
 
     # now pull all the images that matches the environment and state
     images = MicrosoftImagesModel.query.filter(
@@ -210,8 +223,11 @@ def _get_azure_images_for_region_state(region, state):
         MicrosoftImagesModel.state == state)
 
     extra_attrs = {'region': region}
-    return [
-        get_formatted_dict(image, extra_attrs=extra_attrs) for image in images]
+    try:
+        return [get_formatted_dict(
+            image, extra_attrs=extra_attrs) for image in images]
+    except DataError:
+        abort(Response('', status=404))
 
 
 def get_provider_images_for_region_and_state(provider, region, state):
@@ -219,18 +235,30 @@ def get_provider_images_for_region_and_state(provider, region, state):
     if provider == 'microsoft':
         return _get_azure_images_for_region_state(region, state)
 
-    if hasattr(PROVIDER_IMAGES_MODEL_MAP[provider], 'region') \
+    if hasattr(PROVIDER_IMAGES_MODEL_MAP[provider], 'region')\
             and hasattr(PROVIDER_IMAGES_MODEL_MAP[provider], 'state'):
-        images = PROVIDER_IMAGES_MODEL_MAP[provider].query.filter(
-            PROVIDER_IMAGES_MODEL_MAP[provider].region == region,
-            PROVIDER_IMAGES_MODEL_MAP[provider].state == state)
-    return [get_formatted_dict(image) for image in images]
+        region_names = []
+        for each in get_provider_regions(provider):
+            region_names.append(each['name'])
+        if state in ImageState.__members__ and region in region_names:
+            images = PROVIDER_IMAGES_MODEL_MAP[provider].query.filter(
+                PROVIDER_IMAGES_MODEL_MAP[provider].region == region,
+                PROVIDER_IMAGES_MODEL_MAP[provider].state == state)
+            return [get_formatted_dict(image) for image in images]
+        else:
+            abort(Response('', status=404))
+    else:
+        abort(Response('', status=404))
 
 
 def get_provider_images_for_state(provider, state):
-    images = PROVIDER_IMAGES_MODEL_MAP[provider].query.filter(
-        PROVIDER_IMAGES_MODEL_MAP[provider].state == state)
+    if state in ImageState.__members__:
+        images = PROVIDER_IMAGES_MODEL_MAP[provider].query.filter(
+            PROVIDER_IMAGES_MODEL_MAP[provider].state == state)
+    else:
+        abort(Response('', status=404))
     return [get_formatted_dict(image) for image in images]
+
 
 
 def get_provider_servers_for_region(provider, region):
@@ -238,9 +266,16 @@ def get_provider_servers_for_region(provider, region):
     if provider == 'microsoft':
         return _get_azure_servers(region)
 
-    if PROVIDER_SERVERS_MODEL_MAP.get(provider) != None:
-        servers = PROVIDER_SERVERS_MODEL_MAP[provider].query.filter(
-            PROVIDER_SERVERS_MODEL_MAP[provider].region == region)
+    region_names = []
+    for each in get_provider_regions(provider):
+        region_names.append(each['name'])
+    if region in region_names:
+        if PROVIDER_SERVERS_MODEL_MAP.get(provider) != None:
+            servers = PROVIDER_SERVERS_MODEL_MAP[provider].query.filter(
+                PROVIDER_SERVERS_MODEL_MAP[provider].region == region)
+    else:
+        abort(Response('', status=404))
+
     return [get_formatted_dict(server) for server in servers]
 
 
@@ -249,18 +284,29 @@ def get_provider_servers_for_region_and_type(provider, region, server_type):
     if provider == 'microsoft':
         return _get_azure_servers(region, server_type)
 
-    if PROVIDER_SERVERS_MODEL_MAP.get(provider) != None:
-        servers = PROVIDER_SERVERS_MODEL_MAP[provider].query.filter(
-            PROVIDER_SERVERS_MODEL_MAP[provider].region == region,
-            PROVIDER_SERVERS_MODEL_MAP[provider].type == server_type)
-    return [get_formatted_dict(server) for server in servers]
-
+    region_names = []
+    for each in get_provider_regions(provider):
+        region_names.append(each['name'])
+    if PROVIDER_SERVERS_MODEL_MAP.get(provider) != None and \
+        server_type in get_provider_servers_types(provider) and region in region_names:
+            servers = PROVIDER_SERVERS_MODEL_MAP[provider].query.filter(
+                PROVIDER_SERVERS_MODEL_MAP[provider].region == region,
+                PROVIDER_SERVERS_MODEL_MAP[provider].type == server_type)
+            return [get_formatted_dict(server) for server in servers]
+    else:
+        abort(Response('', status=404))
 
 def get_provider_images_for_region(provider, region):
     images = []
-    if hasattr(PROVIDER_IMAGES_MODEL_MAP[provider], 'region'):
-        images = PROVIDER_IMAGES_MODEL_MAP[provider].query.filter(
-            PROVIDER_IMAGES_MODEL_MAP[provider].region == region)
+    region_names = []
+    for each in get_provider_regions(provider):
+        region_names.append(each['name'])
+    if region in region_names:
+        if hasattr(PROVIDER_IMAGES_MODEL_MAP[provider], 'region'):
+            images = PROVIDER_IMAGES_MODEL_MAP[provider].query.filter(
+                PROVIDER_IMAGES_MODEL_MAP[provider].region == region)
+    else:
+        abort(Response('', status=404))
     return [get_formatted_dict(image) for image in images]
 
 
@@ -279,6 +325,10 @@ def get_provider_images(provider):
 def get_data_version_for_provider_category(provider, category):
     column_name = provider + category
     versions = VersionsModel.query.all()[0]
+    try:
+        getattr(versions, column_name)
+    except AttributeError:
+        abort(Response('', status=404))
     return {'version': str(float(getattr(versions, column_name)))}
 
 
@@ -291,7 +341,7 @@ def assert_valid_provider(provider):
 
 def assert_valid_category(category):
     if category not in SUPPORTED_CATEGORIES:
-        abort(Response('', status=404))
+        abort(Response('', status=400))
 
 
 def make_response(content_dict, collection_name, element_name):

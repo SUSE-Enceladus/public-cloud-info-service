@@ -97,7 +97,7 @@ def test_get_provider_invalid_category(client, extension):
     with mock.patch('pint_server.app.assert_valid_provider'):
         route = '/v1/' + provider + '/' + invalid_category + extension
         rv = client.get(route)
-        validate(rv, 404, extension)
+        validate(rv, 400, extension)
 
 
 @pytest.mark.parametrize("server_type", ["region", "update"])  # regionserver, smt from original pint
@@ -288,7 +288,7 @@ def test_get_provider_valid_region_invalidcategory(client, provider, extension):
         with mock.patch('pint_server.app.assert_valid_provider'):
             route = '/v1/' + provider + '/' + region + invalid_category + extension
             rv = client.get(route)
-            validate(rv, 404, extension)
+            validate(rv, 400, extension)
 
 
 @pytest.mark.parametrize("extension", ['', '.json', '.xml'])
