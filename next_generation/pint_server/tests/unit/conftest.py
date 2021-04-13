@@ -1,8 +1,10 @@
 import mock
 import os
 import pytest
+import sqlalchemy
 
 os.environ = mock.MagicMock()
+sqlalchemy.create_engine = mock.MagicMock()
 
 from pint_server import app
 

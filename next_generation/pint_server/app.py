@@ -31,7 +31,6 @@ CORS(app, resources={
 # we don't care about modifications as we are doing DB read only
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-
 null_to_empty = lambda s : s or ''
 
 CACHE_PROVIDERS = None
@@ -252,7 +251,7 @@ def get_provider_servers_for_region(provider, region):
     servers = []
     if provider == 'microsoft':
         return _get_azure_servers(region)
-    
+
     region_names = []
     for each in get_provider_regions(provider):
         region_names.append(each['name'])
@@ -282,7 +281,6 @@ def get_provider_servers_for_region_and_type(provider, region, server_type):
             return [get_formatted_dict(server) for server in servers]
     else:
         abort(Response('', status=404))
-
 
 def get_provider_images_for_region(provider, region):
     images = []
