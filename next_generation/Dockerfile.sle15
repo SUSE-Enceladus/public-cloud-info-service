@@ -1,0 +1,11 @@
+FROM registry.suse.de/home/yeey/pintserverng/containers/pint/pint-server-lambda-function:latest
+
+# To test development changes, you can just directly COPY files and layer
+# on top of pint/pint-server-lambda-function container. For example:
+COPY serverless_app.py /var/task/
+
+WORKDIR /var/task
+
+# NOTE(gyee): we must have both ENTRYPOINT and CMD defined
+ENTRYPOINT [ "/usr/bin/python3", "-m", "awslambdaric" ]
+CMD [ "serverless_app.handler" ]

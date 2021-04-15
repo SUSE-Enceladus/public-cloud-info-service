@@ -77,9 +77,9 @@ Resources:
           POSTGRES_SSL_MODE: !Ref DBSSLMode
           POSTGRES_SSL_ROOT_CERTIFICATE: !Ref DBTrustedCertFile
     Metadata:
-      DockerTag: python3.6-v1
+      DockerTag: pintserver-v1
       DockerContext: .
-      Dockerfile: Dockerfile
+      Dockerfile: Dockerfile.sle15
 
 
 Outputs:
