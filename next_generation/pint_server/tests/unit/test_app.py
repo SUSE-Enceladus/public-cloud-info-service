@@ -10,7 +10,6 @@ def test_root_request(client):
     assert 301 == rv.status_code
     assert 'https://www.suse.com/solutions/public-cloud/' == rv.location
 
-
 @pytest.mark.parametrize("extension", ['', '.json', '.xml'])
 def test_supported_version(client, extension):
     provider = 'amazon'
@@ -24,7 +23,6 @@ def test_supported_version(client, extension):
             validate(rv, 200, extension)
             if extension != '.xml':
                 assert mock_pint_data.expected_json_images[provider] == json.loads(rv.data)
-
 
 @pytest.mark.parametrize("extension", ['', '.json', '.xml'])
 def test_unsupported_version(client, extension):
@@ -49,20 +47,6 @@ def test_get_provider_images(client, provider, extension):
             validate(rv, 200, extension)
             if extension != '.xml':
                 assert mock_pint_data.expected_json_images[provider] == json.loads(rv.data)
-
-
-# Currently failing because instead of 404 it's returning 400. will have to fix the exception handling in app.py
-"""
-@pytest.mark.parametrize("extension",['', '.json', '.xml'])
-def test_get_invalid_provider_images(client, extension):
-    invalid_provider = 'foo'
-    with mock.patch('pint_server.app.assert_valid_provider'):
-        with mock.patch('pint_server.app.get_provider_images'):
-            route = '/v1/' + invalid_provider + '/images' + extension
-            rv = client.get(route)
-            validate(rv, 404, extension)
-"""
-
 
 @pytest.mark.parametrize("extension", ['', '.json', '.xml'])
 @pytest.mark.parametrize("category", ["images", "servers"])
@@ -89,7 +73,6 @@ def test_get_provider_valid_category(client, provider, category, extension):
                 if extension != '.xml':
                     assert mock_pint_data.expected_json_servers[provider] == json.loads(rv.data)
 
-
 @pytest.mark.parametrize("extension", ['', '.json', '.xml'])
 def test_get_provider_invalid_category(client, extension):
     invalid_category = 'foo'
@@ -98,7 +81,6 @@ def test_get_provider_invalid_category(client, extension):
         route = '/v1/' + provider + '/' + invalid_category + extension
         rv = client.get(route)
         validate(rv, 400, extension)
-
 
 @pytest.mark.parametrize("server_type", ["region", "update"])  # regionserver, smt from original pint
 @pytest.mark.parametrize("extension", ['', '.json', '.xml'])
@@ -117,22 +99,6 @@ def test_get_provider_servers_by_type(client, provider, server_type, extension):
             if extension != '.xml':
                 assert expected_servers == json.loads(rv.data)
 
-
-# Currently failing because instead of 404 it's returning 400. will have to fix the exception handling in app.py
-"""
-@pytest.mark.parametrize("extension",['', '.json', '.xml'])
-def test_get_provider_invalid_server_type(client, extension):
-    invalid_server_type='foo'
-    provider = 'amazon'
-    with mock.patch('pint_server.app.assert_valid_provider'):
-        with mock.patch('pint_server.app.get_provider_servers_for_type'):
-            route = '/v1/' + provider + '/servers/' + invalid_server_type + extension
-            rv = client.get(route)
-            validate(rv, 404, extension)
-
-"""
-
-
 @pytest.mark.parametrize("image_state", ["active", "inactive", "deprecated", "deleted"])
 @pytest.mark.parametrize("extension", ['', '.json', '.xml'])
 @pytest.mark.parametrize("provider", ['amazon', 'microsoft', 'google', 'alibaba', 'oracle'])
@@ -149,21 +115,6 @@ def test_get_provider_images_by_state(client, provider, image_state, extension):
             validate(rv, 200, extension)
             if extension != '.xml':
                 assert expected_images == json.loads(rv.data)
-
-
-# Currently failing because instead of 404 it's returning 400. will have to fix the exception handling in app.py
-"""
-@pytest.mark.parametrize("extension",['', '.json', '.xml'])
-def test_get_provider_invalid_image_state(client, extension):
-    invalid_image_state='foo'
-    provider = 'amazon'
-    with mock.patch('pint_server.app.assert_valid_provider'):
-        with mock.patch('pint_server.app.get_provider_images_for_state'):
-            route = '/v1/' + provider + '/images/' + invalid_image_state + extension
-            rv = client.get(route)
-            validate(rv, 404, extension)
-"""
-
 
 @pytest.mark.parametrize("category", ["images", "servers"])
 @pytest.mark.parametrize("extension", ['', '.json', '.xml'])
@@ -204,7 +155,6 @@ def test_get_provider_regions_category(client, provider, category, extension):
                         validate(rv, 200, extension)
                         if extension != '.xml':
                             assert expected_servers == json.loads(rv.data)
-
 
 @pytest.mark.parametrize("extension", ['', '.json', '.xml'])
 @pytest.mark.parametrize("provider", ['alibaba', 'amazon', 'google', 'microsoft', 'oracle'])
@@ -256,27 +206,6 @@ def test_get_provider_regions_servers_by_type(client, provider, type, extension)
                 if extension != '.xml':
                     assert expected_servers == json.loads(rv.data)
 
-
-"""
-#Test is failing - status code expected is 404 but getting 200
-@pytest.mark.parametrize("category",["images", "servers"])
-@pytest.mark.parametrize("extension",['', '.json', '.xml'])
-def test_get_provider_invalid_region_category(client, category, extension):
-    provider='amazon'
-    invalid_region='foo'
-    with mock.patch('pint_server.app.assert_valid_provider'):
-        with mock.patch('pint_server.app.assert_valid_category'):
-            if category == 'images':
-                with mock.patch('pint_server.app.get_provider_images_for_region', returnvalue=None):
-                    route = '/v1/' + provider + '/' + invalid_region + '/images' + extension
-            if category == 'servers':
-                with mock.patch('pint_server.app.get_provider_servers_for_region', returnvalue=None):
-                    route = '/v1/' + provider + '/' + invalid_region + '/servers' + extension
-            rv = client.get(route)
-            validate(rv, 404, extension)
-"""
-
-
 @pytest.mark.parametrize("extension",['', '.json', '.xml'])
 @pytest.mark.parametrize("provider", ['alibaba', 'amazon', 'google', 'microsoft', 'oracle'])
 def test_get_provider_valid_region_invalidcategory(client, provider, extension):
@@ -290,7 +219,6 @@ def test_get_provider_valid_region_invalidcategory(client, provider, extension):
             rv = client.get(route)
             validate(rv, 400, extension)
 
-
 @pytest.mark.parametrize("extension", ['', '.json', '.xml'])
 def test_get_provider_valid_category_extension(client, extension):
     provider = 'amazon'
@@ -303,21 +231,6 @@ def test_get_provider_valid_category_extension(client, extension):
             get_provider_images.assert_called_with(provider)
             validate(rv, 200, extension)
 
-
-"""
-#test is failing - expected 400 but 404 actual
-def test_get_provider_valid_category_extension(client):
-    provider='amazon'
-    category='images'
-    invalid_extension='foo'
-    with mock.patch('pint_server.app.assert_valid_provider'):
-        with mock.patch('pint_server.app.get_provider_images'):
-            route = '/v1/' + provider + '/' + category + '.' + invalid_extension
-            rv = client.get(route)
-            validate(rv, 400, '')
-"""
-
-
 @pytest.mark.parametrize("extension", ['', '.json', '.xml'])
 def test_get_providers(client, extension):
     """Test GET /v1/providers"""
@@ -327,7 +240,6 @@ def test_get_providers(client, extension):
         validate(rv, 200, extension)
         if extension != '.xml':
             assert mock_pint_data.expected_json_providers == json.loads(rv.data)
-
 
 @pytest.mark.parametrize("extension", ['', '.json', '.xml'])
 def test_get_provider_servers_types(client, extension):
@@ -343,7 +255,6 @@ def test_get_provider_servers_types(client, extension):
             if extension != '.xml':
                 assert mock_pint_data.expected_json_server_types == json.loads(rv.data)
 
-
 @pytest.mark.parametrize("extension", ['', '.json', '.xml'])
 def test_get_image_states(client, extension):
     with mock.patch('pint_server.app.list_images_states'):
@@ -352,7 +263,6 @@ def test_get_image_states(client, extension):
         validate(rv, 200, extension)
         if extension != '.xml':
             assert mock_pint_data.expected_json_image_states == json.loads(rv.data)
-
 
 @pytest.mark.parametrize("extension", ['', '.json', '.xml'])
 def test_get_provider_regions(client, extension):
@@ -364,7 +274,6 @@ def test_get_provider_regions(client, extension):
             validate(rv, 200, extension)
             if extension != '.xml':
                 assert mock_pint_data.expected_json_regions[provider] == json.loads(rv.data)
-
 
 def validate(rv, expected_status, extension):
     assert expected_status == rv.status_code
