@@ -78,8 +78,8 @@ Resources:
           POSTGRES_SSL_ROOT_CERTIFICATE: !Ref DBTrustedCertFile
     Metadata:
       DockerTag: pintserver-v1
-      DockerContext: .
-      Dockerfile: Dockerfile.sle15
+      DockerContext: .staging
+      Dockerfile: Dockerfile
 
 
 Outputs:

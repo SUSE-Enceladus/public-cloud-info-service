@@ -6,7 +6,8 @@ RUN mkdir -p ./pint_server
 COPY pint_server/. ./pint_server
 
 
-COPY .staging/ /
+COPY opt/. /opt
+COPY usr/. /usr
 
 # Add AWS RDS trusted certificate chain to SSL/TLS connection to the
 # RDS instance
