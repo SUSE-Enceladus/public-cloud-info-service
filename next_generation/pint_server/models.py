@@ -1,8 +1,10 @@
 import enum
-import os
 
 from sqlalchemy import Column, Date, Enum, Numeric, String
-from pint_server.database import Base
+from sqlalchemy.ext.declarative import declarative_base
+
+Base = declarative_base()
+# from pint_server.database import Base
 
 
 class ImageState(enum.Enum):
@@ -20,21 +22,29 @@ class ServerType(enum.Enum):
     update = 'update'
 
 
-class ProviderImageBase(object):
-    name = Column(String(255))
+class PintBase(object):
+    def __repr__(self):
+        return "<%s(%s)>" % (self.__class__.__name__,
+                             ", ".join(["%s=%s" % (k, repr(getattr(self, k)))
+                                        for k in self.__table__.
+                                        columns.keys()]))
+
+
+class ProviderImageBase(PintBase):
+    name = Column(String(255), primary_key=True)
     state = Column(Enum(ImageState))
     replacementname = Column(String(255))
-    publishedon = Column(Date)
+    publishedon = Column(Date, primary_key=True)
     deprecatedon = Column(Date)
     deletedon = Column(Date)
     changeinfo = Column(String(255))
 
 
-class ProviderServerBase(object):
+class ProviderServerBase(PintBase):
     type = Column(Enum(ServerType))
     name = Column(String(100))
     ip = Column(String(15), primary_key=True)
-    region = Column(String(100))
+    region = Column(String(100), primary_key=True)
 
 
 class AmazonImagesModel(Base, ProviderImageBase):
@@ -42,7 +52,7 @@ class AmazonImagesModel(Base, ProviderImageBase):
 
     id = Column(String(100), primary_key=True)
     replacementid = Column(String(100))
-    region = Column(String(100))
+    region = Column(String(100), primary_key=True)
 
 
 class AlibabaImagesModel(Base, ProviderImageBase):
@@ -64,7 +74,7 @@ class MicrosoftImagesModel(Base, ProviderImageBase):
     __tablename__ = 'microsoftimages'
 
     name = Column(String(255), primary_key=True)
-    environment = Column(String(50))
+    environment = Column(String(50), primary_key=True)
     urn = Column(String(100))
 
 
@@ -75,11 +85,11 @@ class OracleImagesModel(Base, ProviderImageBase):
     replacementid = Column(String(100))
 
 
-class AmazonServersModel(Base,  ProviderServerBase):
+class AmazonServersModel(Base, ProviderServerBase):
     __tablename__ = 'amazonservers'
 
 
-class GoogleServersModel(Base,  ProviderServerBase):
+class GoogleServersModel(Base, ProviderServerBase):
     __tablename__ = 'googleservers'
 
 
@@ -87,21 +97,22 @@ class MicrosoftServersModel(Base, ProviderServerBase):
     __tablename__ = 'microsoftservers'
 
 
-class MicrosoftRegionMapModel(Base):
+class MicrosoftRegionMapModel(Base, PintBase):
     __tablename__ = 'microsoftregionmap'
 
     environment = Column(String(50), primary_key=True)
     region = Column(String(100), primary_key=True)
     canonicalname = Column(String(100), primary_key=True)
 
-class VersionsModel(Base):
+
+class VersionsModel(Base, PintBase):
     __tablename__ = 'versions'
 
-    amazonservers = Column(Numeric, primary_key=True)
-    amazonimages = Column(Numeric)
-    googleservers = Column(Numeric)
-    googleimages = Column(Numeric)
-    oracleimages = Column(Numeric)
-    microsoftservers = Column(Numeric)
-    microsoftimages = Column(Numeric)
-    alibabaimages = Column(Numeric)
+    amazonservers = Column(Numeric, nullable=False, primary_key=True)
+    amazonimages = Column(Numeric, nullable=False)
+    googleservers = Column(Numeric, nullable=False)
+    googleimages = Column(Numeric, nullable=False)
+    oracleimages = Column(Numeric, nullable=False)
+    microsoftservers = Column(Numeric, nullable=False)
+    microsoftimages = Column(Numeric, nullable=False)
+    alibabaimages = Column(Numeric, nullable=False)
