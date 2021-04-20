@@ -108,11 +108,5 @@ class MicrosoftRegionMapModel(Base, PintBase):
 class VersionsModel(Base, PintBase):
     __tablename__ = 'versions'
 
-    amazonservers = Column(Numeric, nullable=False, primary_key=True)
-    amazonimages = Column(Numeric, nullable=False)
-    googleservers = Column(Numeric, nullable=False)
-    googleimages = Column(Numeric, nullable=False)
-    oracleimages = Column(Numeric, nullable=False)
-    microsoftservers = Column(Numeric, nullable=False)
-    microsoftimages = Column(Numeric, nullable=False)
-    alibabaimages = Column(Numeric, nullable=False)
+    tablename = Column(String(100), primary_key=True)
+    version = Column(Numeric, nullable=False)

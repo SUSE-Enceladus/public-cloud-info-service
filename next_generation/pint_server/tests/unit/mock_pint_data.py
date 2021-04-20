@@ -63,7 +63,7 @@ def construct_mock_expected_response(content_dict, collection_name):
         content = content_dict
     return content
 
-query_providers_return_value = ['amazon', 'microsoft', 'google', 'alibaba', 'oracle']
+get_supported_providers_return_value = ['amazon', 'microsoft', 'google', 'alibaba', 'oracle']
 expected_json_providers = {'providers': [
     {'name': 'amazon'},{'name': 'microsoft'},{'name': 'google'},{'name': 'alibaba'},{'name': 'oracle'}
     ]
