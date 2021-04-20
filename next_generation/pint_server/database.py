@@ -45,14 +45,14 @@ def create_postgres_url_from_env():
         if db_root_cert:
             ssl_mode += '&sslrootcert=%s' % (db_root_cert)
 
-    return 'postgresql://%(user)s:%(password)s@%(host)s:%(port)s/\
-                            %(db)s%(ssl)s' % {
-                                                'user': db_user,
-                                                'password': db_password,
-                                                'db': db_name,
-                                                'host': db_host,
-                                                'port': db_port,
-                                                'ssl': ssl_mode}
+    return ('postgresql://%(user)s:%(password)s@%(host)s:%(port)s/'
+            '%(db)s%(ssl)s' % {
+                'user': db_user,
+                'password': db_password,
+                'db': db_name,
+                'host': db_host,
+                'port': db_port,
+                'ssl': ssl_mode})
 
 
 def init_db():
