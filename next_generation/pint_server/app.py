@@ -9,7 +9,7 @@ from sqlalchemy.exc import DataError
 from xml.dom import minidom
 import xml.etree.ElementTree as ET
 
-from pint_server.database import engine, init_db, db_session
+from pint_server.database import init_db
 from pint_server.models import ImageState, AmazonImagesModel, \
                                OracleImagesModel, \
                                AlibabaImagesModel, MicrosoftImagesModel, \
@@ -20,7 +20,7 @@ from pint_server.models import ImageState, AmazonImagesModel, \
 
 
 app = Flask(__name__)
-init_db()
+db_session = init_db()
 
 cors_config = {
     "origins": ["*"]
@@ -76,7 +76,7 @@ def query_providers():
     sql_stat = text("select regexp_replace(table_name, 'servers|images', '') "
                     "from information_schema.tables where "
                     "table_schema = 'public' and table_name like '%images'")
-    result = engine.execute(sql_stat)
+    result = db_session.get_bind().execute(sql_stat)
     CACHE_PROVIDERS = [row[0] for row in result]
     return CACHE_PROVIDERS
 
