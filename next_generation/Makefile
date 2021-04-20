@@ -1,4 +1,13 @@
-all: build_psycopg2_bin copy_dependent_libs copy_requirements_txt build_image cleanup
+all: sle15
+
+sle15: create_staging copy_sle15_dockerfile build_image clean
+
+aws: create_staging build_psycopg2_bin copy_dependent_libs copy_requirements_txt copy_aws_dockerfile build_image 
+
+create_staging:
+	mkdir -p .staging
+	cp *.py .staging/
+	cp -r pint_server .staging/
 
 build_psycopg2_bin:
 	mkdir -p .staging/opt/python/lib/python3.6/site-packages
@@ -14,8 +23,14 @@ copy_requirements_txt:
 	cp requirements.txt .staging
 	sed -i '/^psycopg2/d' .staging/requirements.txt
 
+copy_aws_dockerfile:
+	cp Dockerfile.aws .staging/Dockerfile
+
+copy_sle15_dockerfile:
+	cp Dockerfile.sle15 .staging/Dockerfile
+
 build_image:
 	sam build
 
-cleanup:
+clean:
 	rm -rf .staging
