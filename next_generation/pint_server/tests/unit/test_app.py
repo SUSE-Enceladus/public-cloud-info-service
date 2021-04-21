@@ -234,8 +234,8 @@ def test_get_provider_valid_category_extension(client, extension):
 @pytest.mark.parametrize("extension", ['', '.json', '.xml'])
 def test_get_providers(client, extension):
     """Test GET /v1/providers"""
-    with mock.patch('pint_server.app.query_providers',
-                    return_value=mock_pint_data.query_providers_return_value):
+    with mock.patch('pint_server.app.get_supported_providers',
+                    return_value=mock_pint_data.get_supported_providers_return_value):
         rv = client.get('/v1/providers' + extension)
         validate(rv, 200, extension)
         if extension != '.xml':

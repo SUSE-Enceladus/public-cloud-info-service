@@ -1,4 +1,5 @@
 import datetime
+import re
 from decimal import Decimal
 from flask import abort, Flask, jsonify, make_response, request, redirect, \
                   Response
@@ -6,6 +7,7 @@ from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import text, or_
 from sqlalchemy.exc import DataError
+from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from xml.dom import minidom
 import xml.etree.ElementTree as ET
 
@@ -57,33 +59,16 @@ def get_supported_providers():
     global CACHE_PROVIDERS
 
     if CACHE_PROVIDERS is None:
-        CACHE_PROVIDERS = query_providers()
+        versions  = VersionsModel.query.with_entities(VersionsModel.tablename)
+        CACHE_PROVIDERS = list(
+            {re.sub('(servers|images)', '', v.tablename) for v in versions})
 
-    return CACHE_PROVIDERS
-
-
-def query_providers():
-    """Get all the providers"""
-    global CACHE_PROVIDERS
-
-    if CACHE_PROVIDERS is not None:
-        return CACHE_PROVIDERS
-
-    # FIXME(gyee): this query is very specific to PostgreSQL. If we support
-    # other DBs such as MySQL, we'll need to conditionally change this.
-    # Ideally, this information should be in a SQL lookup table so it's
-    # database type agnostic.
-    sql_stat = text("select regexp_replace(table_name, 'servers|images', '') "
-                    "from information_schema.tables where "
-                    "table_schema = 'public' and table_name like '%images'")
-    result = db_session.get_bind().execute(sql_stat)
-    CACHE_PROVIDERS = [row[0] for row in result]
     return CACHE_PROVIDERS
 
 
 def get_providers():
-    providers = query_providers()
-    return [{'name': provider} for provider in providers]
+    """Get all the providers"""
+    return [{'name': provider} for provider in get_supported_providers()]
 
 
 def json_to_xml(json_obj, collection_name, element_name):
@@ -323,13 +308,16 @@ def get_provider_images(provider):
 
 
 def get_data_version_for_provider_category(provider, category):
-    column_name = provider + category
-    versions = VersionsModel.query.all()[0]
+    tablename = provider + category
     try:
-        getattr(versions, column_name)
-    except AttributeError:
+        version = VersionsModel.query.filter(
+            VersionsModel.tablename == tablename).one()
+    except (NoResultFound, MultipleResultsFound):
+        # NOTE(gyee): we should never run into MultipleResultsFound exception
+        # or otherse we have data corruption problem in the database.
         abort(Response('', status=404))
-    return {'version': str(float(getattr(versions, column_name)))}
+
+    return {'version': str(version.version)}
 
 
 def assert_valid_provider(provider):
