@@ -1,7 +1,0 @@
-<?xml version="1.0"?>
-<providers>
-  <provider name="amazon"/>
-  <provider name="google"/>
-  <provider name="microsoft"/>
-  <provider name="oracle"/>
-</providers>

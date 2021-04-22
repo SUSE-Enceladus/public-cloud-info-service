@@ -10,3 +10,5 @@ dist/
 *.egg*/
 *_venv/
 *.log
+AUTHORS
+ChangeLog
