@@ -181,6 +181,13 @@ For example:
 
      python -m pytest --base-url http://localhost:5000 pint_server/tests/functional
 
+To run the functional tests in a loop for a specified amount of time:
+
+You can pass the options like --minutes, --hours, --seconds to pytest
+
+    .. code-block::
+    python -m pytest --minutes 15 --base-url http://localhost:5000 pint_server/tests/functional
+
 =====================
 How To Make A Release
 =====================
