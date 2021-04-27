@@ -5,3 +5,4 @@ Flask-CORS
 Flask-SQLAlchemy
 lxml
 requests
+pytest-stress
