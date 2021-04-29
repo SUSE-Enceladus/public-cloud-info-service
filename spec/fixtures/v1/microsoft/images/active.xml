@@ -1,5 +1,0 @@
-<?xml version="1.0"?>
-<images>
-  <image name="suse-sles-11-sp3-v20150127" id="" state="active" replacementid="" replacementname="" publishedon="2015-01-27" deprecatedon="" deletedon="" environment="PublicAzure"/>
-  <image name="suse-sles-11-sp3-v20150127" id="" state="active" replacementid="" replacementname="" publishedon="2015-01-27" deprecatedon="" deletedon="" environment="Mooncake"/>
-</images>
