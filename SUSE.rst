@@ -66,15 +66,18 @@ How To Make A Release
    .. code-block::
 
      git tag -a v2.0.0 -m "Release 2.0.0"
+     git push --tags
 
-2. checkout the *python-PintServerNG* package in
+2. checkout the *python-PintServer* package in
    *Devel:PubCloud:ProductionServices:pint*.
 
    .. code-block::
 
-     isc bco Devel:PubCloud:ProductionServices:pint python-PintServerNG
+     isc bco Devel:PubCloud:ProductionServices:pint python-PintServer
 
-3. update *python-PintServerNG.spec* with the new version and release
+3. update both the *version* and *revision* values in the *_service* file
 
-4. submit the changes
+4. update *python-PintServer.spec* with the new version and release
+
+5. submit the changes
 
