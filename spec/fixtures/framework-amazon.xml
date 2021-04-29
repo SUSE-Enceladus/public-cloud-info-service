@@ -1,7 +1,0 @@
-<?xml version="1.0"?>
-<framework name="amazon">
-  <images>
-    <image deletedon="" deprecatedon="" id="ami-9253f9ea" name="suse-sles-11-sp4-byos-v20180105-pv-ssd-x86_64" publishedon="20180105" region="us-west-2" replacementid="" replacementname="" state="active"/>
-    <image deletedon="" deprecatedon="" id="ami-e45df79c" name="suse-sles-11-sp4-v20180105-pv-ssd-x86_64" publishedon="20180105" region="us-west-2" replacementid="" replacementname="" state="active"/>
-  </images>
-</framework>

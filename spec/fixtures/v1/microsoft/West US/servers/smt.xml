@@ -1,7 +1,0 @@
-<?xml version="1.0"?>
-<servers>
-  <server type="smt-sles" name="smt-azure.susecloud.net" ip="23.100.46.123" region="West US"/>
-  <server type="smt-sles" name="smt-azure.susecloud.net" ip="23.101.192.253" region="West US"/>
-  <server type="smt-sap" name="smt-azure.susecloud.net" ip="40.112.248.207" region="West US"/>
-  <server type="smt-sap" name="smt-azure.susecloud.net" ip="13.93.211.154" region="West US"/>
-</servers>

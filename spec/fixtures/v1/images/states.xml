@@ -1,7 +1,0 @@
-<?xml version="1.0"?>
-<states>
-  <state name="active"/>
-  <state name="inactive"/>
-  <state name="deprecated"/>
-  <state name="deleted"/>
-</states>
