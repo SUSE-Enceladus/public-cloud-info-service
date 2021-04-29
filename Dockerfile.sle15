@@ -1,4 +1,4 @@
-FROM registry.suse.de/home/yeey/pintserverng/containers/pint/pint-server-lambda-function:latest
+FROM registry.suse.de/devel/pubcloud/productionservices/pint/containers/pint/pint-server-lambda-function:latest
 
 # To test development changes, you can just directly COPY files and layer
 # on top of pint/pint-server-lambda-function container. For example:
