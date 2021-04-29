@@ -10,14 +10,15 @@ import time
 To run this program, 
 python loadtest.py --help displays the options the program takes
 If you do not provide any options, there are default values for the options
-python loadtest.py --num_requests 100 --duration 60 --url http://localhost:5000   
+python loadtest.py --num_requests 100 --duration 1 --url http://localhost:5000   
+Here the duration is in minutes
 '''
 
 urls_to_hit = ["/v1/providers",
                "/v1/amazon/images", "/v1/amazon/servers",
                "/v1/google/images", "/v1/google/servers",
                "/v1/oracle/images", "/v1/oracle/servers",
-               "/v1/microsoft/images", "/v1/microsoft/servers"
+               "/v1/microsoft/images", "/v1/microsoft/servers",
                "/v1/amazon/regions",
                "/v1/amazon/us-east-2/images",
                "/v1/microsoft/regions",
@@ -42,9 +43,9 @@ def main(argv):
     parser.add_argument('-d', '--duration',
                         required=False,
                         type=int,
-                        default=60,
+                        default=1,
                         dest="duration",
-                        help="Duration in seconds")
+                        help="Duration in minutes")
     parser.add_argument('-u', '--url',
                         required=False,
                         type=str,
@@ -58,7 +59,7 @@ def main(argv):
 
 
     start_time = datetime.now()
-    end_time = start_time + timedelta(seconds=duration)
+    end_time = start_time + timedelta(minutes=duration)
     executor = ThreadPoolExecutor(max_workers=100)
     num_chunks = 0
     min_chunks = 5
@@ -76,7 +77,7 @@ def main(argv):
         while (num_requests_in_chunk_counter < num_requests / chunks and datetime.now() < end_time):
             num_requests_in_chunk_counter = num_requests_in_chunk_counter + 1
             executor.submit(task(base_url))
-        while (datetime.now() < (start_time + timedelta(seconds=(duration/chunks)*num_chunks))):
+        while (datetime.now() < (start_time + timedelta(minutes=(duration/chunks)*num_chunks))):
             time.sleep(1)
         num_chunks = num_chunks + 1
 
