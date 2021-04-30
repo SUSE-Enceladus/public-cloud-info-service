@@ -25,11 +25,28 @@ urls_to_hit = ["/v1/providers",
                "/v1/providers.xml",
                "/v1/alibaba/images.xml"]
 
+time_buckets = {}
+
 def task(base_url):
     print("Executing the Task")
     url = base_url + random.choice(urls_to_hit)
-    requests.get(url, verify=False)
+    resp = requests.get(url, verify=False)
+    increment_time_bucket(resp.elapsed.total_seconds())
     #print("Task Executed {}".format(threading.current_thread()))
+
+def increment_time_bucket(seconds):
+    index = int(seconds // 0.5)
+    if index in time_buckets.keys():
+      time_buckets[index] += 1
+    else:
+      time_buckets[index] = 1
+
+def print_time_buckets():
+    print("========== response time histogram (seconds) ==========")
+    for key in sorted (time_buckets.keys()) :
+      timeStart = key * 0.5
+      timeEnd = (key + 1) * 0.5
+      print(timeStart , " - ", timeEnd, " : " , time_buckets[key])
 
 def main(argv):
     #handle command line arguments
@@ -80,6 +97,7 @@ def main(argv):
         while (datetime.now() < (start_time + timedelta(minutes=(duration/chunks)*num_chunks))):
             time.sleep(1)
         num_chunks = num_chunks + 1
+    print_time_buckets()
 
 
 if __name__ == '__main__':
