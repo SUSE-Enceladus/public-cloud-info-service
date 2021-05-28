@@ -32,6 +32,8 @@ def test_get_providers(baseurl, extension):
     resp = requests.get(url, verify=False)
     expected_status_code = 200
     validate(resp, expected_status_code, extension)
+    assert "providers" in resp.text
+    assert "amazon" in resp.text
 
 @pytest.mark.parametrize("extension", ['', '.json', '.xml'])
 @pytest.mark.parametrize("provider", ['alibaba', 'amazon', 'google', 'microsoft', 'oracle'])
@@ -40,13 +42,28 @@ def test_get_provider_servers_types(baseurl, provider, extension):
     resp = requests.get(url, verify=False)
     expected_status_code = 200
     validate(resp, expected_status_code, extension)
+    #until pint-ng goes live
+    if 'susepubliccloudinfo.suse.com' in baseurl:
+        assert "smt" in resp.text
+        assert "regionserver" in resp.text
+    else:
+        if provider == 'amazon' or provider == 'google' or 'provider' == 'microsoft':
+            assert "region" in resp.text
+            assert "update" in resp.text
+        if provider == 'alibaba' or provider == 'oracle':
+            assert "smt" in resp.text
+            assert "regionserver" in resp.text
 
 @pytest.mark.parametrize("extension", ['', '.json', '.xml'])
 def test_get_image_states(baseurl, extension):
     url = baseurl + '/v1/images/states' + extension
     resp = requests.get(url, verify=False)
     expected_status_code = 200
+    assert "states" in resp.text
+    expected_states = ['active','inactive','deprecated','deleted']
     validate(resp, expected_status_code, extension)
+    for state in expected_states:
+        assert state in resp.text
 
 @pytest.mark.parametrize("extension", ['', '.json', '.xml'])
 @pytest.mark.parametrize("provider", ['alibaba', 'amazon', 'google', 'microsoft', 'oracle'])
@@ -55,6 +72,15 @@ def test_get_provider_regions(baseurl, provider, extension):
     resp = requests.get(url, verify=False)
     expected_status_code = 200
     validate(resp, expected_status_code, extension)
+    assert "regions" in resp.text
+    if provider == 'alibaba':
+        assert "ap-northeast-1" in resp.text
+    if provider == 'amazon':
+        assert "us-east-2" in resp.text
+    if provider == 'google':
+        assert "us-east1" in resp.text
+    if provider == 'microsoft':
+        assert "useast" in resp.text
 
 @pytest.mark.parametrize("extension", ['', '.json', '.xml'])
 @pytest.mark.parametrize("provider", ['alibaba', 'amazon', 'google', 'microsoft', 'oracle'])
@@ -67,6 +93,8 @@ def test_get_provider_servers_for_region_and_type(baseurl, provider, extension):
             resp = requests.get(url, verify=False)
             expected_status_code = 200
             validate(resp, expected_status_code, extension)
+            assert region in resp.text
+            assert server_type in resp.text
 
 @pytest.mark.parametrize("extension", ['', '.json', '.xml'])
 @pytest.mark.parametrize("provider", ['alibaba', 'amazon', 'google', 'microsoft', 'oracle'])
@@ -77,6 +105,7 @@ def test_get_provider_servers_for_type(baseurl, provider, extension):
         resp = requests.get(url, verify=False)
         expected_status_code = 200
         validate(resp, expected_status_code, extension)
+        assert server_type in resp.text
 
 @pytest.mark.parametrize("extension", ['', '.json', '.xml'])
 @pytest.mark.parametrize("provider", ['alibaba', 'amazon', 'google', 'microsoft', 'oracle'])
@@ -90,7 +119,8 @@ def test_get_provider_images_for_region_and_state(baseurl, provider, extension):
             resp = requests.get(url, verify=False)
             expected_status_code = 200
             validate(resp, expected_status_code, extension)
-
+            assert img_state in resp.text
+            assert region in resp.text
 
 @pytest.mark.parametrize("extension", ['', '.json', '.xml'])
 @pytest.mark.parametrize("provider", ['alibaba', 'amazon', 'google', 'microsoft', 'oracle'])
@@ -101,10 +131,12 @@ def test_get_provider_images_for_state(baseurl, provider, extension):
         resp = requests.get(url, verify=False)
         expected_status_code = 200
         validate(resp, expected_status_code, extension)
+        assert img_state in resp.text
+        assert "images" in resp.text
 
 @pytest.mark.parametrize("extension", ['', '.json', '.xml'])
 @pytest.mark.parametrize("category", ['images', 'servers'])
-@pytest.mark.parametrize("provider", ['alibaba', 'amazon', 'google', 'microsoft', 'oracle'])
+@pytest.mark.parametrize("provider", ['alibaba', 'amazon', 'google', 'oracle']) #microsoft will be covered in another test
 def test_get_provider_region_category(baseurl, provider, category, extension):
         regions_resp = requests.get(baseurl + '/v1/' + provider + '/regions', verify=False)
         regions = json.loads(regions_resp.content)['regions']
@@ -116,6 +148,34 @@ def test_get_provider_region_category(baseurl, provider, category, extension):
             resp = requests.get(url, verify=False)
             expected_status_code = 200
             validate(resp, expected_status_code, extension)
+            if extension != '.xml' and len(json.loads(resp.content)[category]) != 0:
+                assert region['name'] in resp.text
+            assert category in resp.text
+
+@pytest.mark.parametrize("extension", ['', '.json', '.xml'])
+@pytest.mark.parametrize("category", ['images', 'servers'])
+def test_get_microsoft_region_servers(baseurl, category, extension):
+    microsofttestregions = ['australiacentral', 'australiacentral2',
+                            'Brazil South', 'brazilsouth',
+                            'canadaeast', 'centralus', 'centraluseuap','chinaeast',
+                            'East US', 'eastus',
+                            'francecentral', 'francesouth',
+                            'Germany Central', 'germanycentral',
+                            'japaneast', 'japanwest',
+                            'northcentralus', 'northeurope',
+                            'Southeast Asia', 'southeastasia',
+                            'uaecentral', 'uknorth', 'uksouth', 'uksouth2',
+                            'usgovarizona', 'usgoviowa', 'usgovtexas', 'usgovvirginia',
+                            'West Europe', 'westeurope', 'westindia', 'West US','westus', 'westus2', 'westus3'
+                        ]
+    for region_name in microsofttestregions:
+        url = baseurl + '/v1/microsoft/' + region_name + '/' + category +  extension
+        resp = requests.get(url, verify=False)
+        expected_status_code = 200
+        validate(resp, expected_status_code, extension)
+        if extension != '.xml' and len(json.loads(resp.content)[category]) != 0:
+            assert region_name in resp.text
+        assert category in resp.text
 
 @pytest.mark.parametrize("extension", ['', '.json', '.xml'])
 @pytest.mark.parametrize("category", ['images', 'servers'])
@@ -125,6 +185,7 @@ def test_provider_category(baseurl, provider, category, extension):
     resp = requests.get(url, verify=False)
     expected_status_code = 200
     validate(resp, expected_status_code, extension)
+    assert category in resp.text
 
 @pytest.mark.parametrize("extension", ['', '.json', '.xml'])
 @pytest.mark.parametrize("category", ['images', 'servers'])
@@ -143,7 +204,6 @@ def test_get_provider_category_data_version(baseurl, provider, category, extensi
             expected_status_code = 200
             validate(resp, expected_status_code, extension)
 
-
 #negative tests
 @pytest.mark.parametrize("extension", ['', '.json', '.xml'])
 @pytest.mark.parametrize("category", ['images', 'servers'])
@@ -153,7 +213,6 @@ def test_get_invalid_provider_category(baseurl, category, extension):
     resp = requests.get(url, verify=False)
     expected_status_code = 404
     validate(resp, expected_status_code, extension)
-
 
 @pytest.mark.parametrize("extension", ['', '.json', '.xml'])
 @pytest.mark.parametrize("provider", ['alibaba', 'amazon', 'google', 'microsoft', 'oracle'])
