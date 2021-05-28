@@ -22,6 +22,7 @@ MYNAME=$0
 CURRENTDIR=$(dirname $(readlink -e $MYNAME))
 # get the source code directory
 SRCDIR=$(dirname $CURRENTDIR)
+python3 -m pip install --user virtualenv
 
 if [[ "$VIRTUAL_ENV" == "" ]] ; then
     if [[ ! -f "${SRCDIR}/${VENV_NAME}/bin/activate" ]] ; then
