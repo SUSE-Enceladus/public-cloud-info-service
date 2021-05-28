@@ -52,6 +52,14 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 null_to_empty = lambda s : s or ''
 
+
+REGIONSERVER_SMT_MAP = {
+    'smt': 'update',
+    'regionserver': 'region',
+    'update': 'update',
+    'region': 'region'
+}
+
 PROVIDER_IMAGES_MODEL_MAP = {
     'amazon': AmazonImagesModel,
     'google': GoogleImagesModel,
@@ -125,24 +133,38 @@ def get_formatted_dict(obj, extra_attrs=None, exclude_attrs=None):
 
 def get_provider_servers_for_type(provider, server_type):
     servers = []
+    if server_type not in REGIONSERVER_SMT_MAP:
+        abort(Response('', status=404))    
+    mapped_server_type = REGIONSERVER_SMT_MAP[server_type]
+    server_types_json = get_provider_servers_types(provider)
+    server_types = [t['name'] for t in server_types_json]
     if (PROVIDER_SERVERS_MODEL_MAP.get(provider) != None and
-            server_type in get_provider_servers_types(provider)):
+            mapped_server_type in server_types):
         servers = PROVIDER_SERVERS_MODEL_MAP[provider].query.filter(
-            PROVIDER_SERVERS_MODEL_MAP[provider].type == server_type)
+            PROVIDER_SERVERS_MODEL_MAP[provider].type == mapped_server_type)
         return [get_formatted_dict(server) for server in servers]
     else:
         abort(Response('', status=404))
 
 
 def get_provider_servers_types(provider):
-    servers = []
     if PROVIDER_SERVERS_MODEL_MAP.get(provider) != None:
         servers = PROVIDER_SERVERS_MODEL_MAP[provider].query.distinct(
             PROVIDER_SERVERS_MODEL_MAP[provider].type)
-    return [{'name': server.type.value} for server in servers]
+        return [{'name': server.type.value} for server in servers]
+    else:
+        # NOTE(gyee): currently we don't have DB tables for both Alibaba and
+        # Oracle servers. In order to maintain compatibility with the
+        # existing Pint server, we are returning the original server
+        # types. In the future, if we do decide to create the tables,
+        # then we can easily add them to PROVIDER_SERVERS_MODEL_MAP.
+        return [{'name': 'smt'}, {'name': 'regionserver'}]
 
 
 def get_provider_regions(provider):
+    if provider == 'microsoft':
+        return _get_all_azure_regions()
+
     servers = []
     images = []
     region_list = [] # Combination list
@@ -161,6 +183,17 @@ def get_provider_regions(provider):
         if image.region not in region_list:
             region_list.append(image.region)
     return [{'name': r } for r in region_list]
+
+
+def _get_all_azure_regions():
+    regions = []
+    environments = MicrosoftRegionMapModel.query.all()
+    for environment in environments:
+        if environment.region not in regions:
+            regions.append(environment.region)
+        if environment.canonicalname not in regions:
+            regions.append(environment.canonicalname)
+    return [{'name': r } for r in sorted(regions)]
 
 
 def _get_azure_servers(region, server_type=None):
@@ -211,9 +244,13 @@ def _get_azure_images_for_region_state(region, state):
     environment_name = environment.environment
 
     # now pull all the images that matches the environment and state
-    images = MicrosoftImagesModel.query.filter(
-        MicrosoftImagesModel.environment == environment_name,
-        MicrosoftImagesModel.state == state)
+    if state is None:
+        images = MicrosoftImagesModel.query.filter(
+            MicrosoftImagesModel.environment == environment_name)
+    else:
+        images = MicrosoftImagesModel.query.filter(
+            MicrosoftImagesModel.environment == environment_name,
+            MicrosoftImagesModel.state == state)
 
     extra_attrs = {'region': region}
     try:
@@ -291,6 +328,9 @@ def get_provider_servers_for_region_and_type(provider, region, server_type):
         abort(Response('', status=404))
 
 def get_provider_images_for_region(provider, region):
+    if provider == 'microsoft':
+        return _get_azure_images_for_region_state(region, None)
+
     images = []
     region_names = []
     for each in get_provider_regions(provider):
