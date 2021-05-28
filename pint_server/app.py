@@ -211,9 +211,13 @@ def _get_azure_images_for_region_state(region, state):
     environment_name = environment.environment
 
     # now pull all the images that matches the environment and state
-    images = MicrosoftImagesModel.query.filter(
-        MicrosoftImagesModel.environment == environment_name,
-        MicrosoftImagesModel.state == state)
+    if state is None:
+        images = MicrosoftImagesModel.query.filter(
+            MicrosoftImagesModel.environment == environment_name)
+    else:
+        images = MicrosoftImagesModel.query.filter(
+            MicrosoftImagesModel.environment == environment_name,
+            MicrosoftImagesModel.state == state)
 
     extra_attrs = {'region': region}
     try:
@@ -233,7 +237,10 @@ def get_provider_images_for_region_and_state(provider, region, state):
         region_names = []
         for each in get_provider_regions(provider):
             region_names.append(each['name'])
-        if state in ImageState.__members__ and region in region_names:
+        if state is None:
+            images = PROVIDER_IMAGES_MODEL_MAP[provider].query.filter(
+                PROVIDER_IMAGES_MODEL_MAP[provider].region == region)
+        elif state in ImageState.__members__ and region in region_names:
             images = PROVIDER_IMAGES_MODEL_MAP[provider].query.filter(
                 PROVIDER_IMAGES_MODEL_MAP[provider].region == region,
                 PROVIDER_IMAGES_MODEL_MAP[provider].state == state)
@@ -290,18 +297,9 @@ def get_provider_servers_for_region_and_type(provider, region, server_type):
     else:
         abort(Response('', status=404))
 
+
 def get_provider_images_for_region(provider, region):
-    images = []
-    region_names = []
-    for each in get_provider_regions(provider):
-        region_names.append(each['name'])
-    if region in region_names:
-        if hasattr(PROVIDER_IMAGES_MODEL_MAP[provider], 'region'):
-            images = PROVIDER_IMAGES_MODEL_MAP[provider].query.filter(
-                PROVIDER_IMAGES_MODEL_MAP[provider].region == region)
-    else:
-        abort(Response('', status=404))
-    return [get_formatted_dict(image) for image in images]
+    return get_provider_images_for_region_and_state(provider, region, None)
 
 
 def get_provider_servers(provider):
