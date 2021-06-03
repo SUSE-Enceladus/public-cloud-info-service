@@ -61,23 +61,25 @@ Testing Pint Server Lamba Function Container Locally
 How To Make A Release
 =====================
 
-1. create a git annotated tag for the release version. For example:
+1. update setup.cfg with the new version
+
+2. create a git annotated tag for the release version. For example:
 
    .. code-block::
 
      git tag -a v2.0.0 -m "Release 2.0.0"
      git push --tags
 
-2. checkout the *python-PintServer* package in
+3. checkout the *python-PintServer* package in
    *Devel:PubCloud:ProductionServices:pint*.
 
    .. code-block::
 
      isc bco Devel:PubCloud:ProductionServices:pint python-PintServer
 
-3. update both the *version* and *revision* values in the *_service* file
+4. update both the *version* and *revision* values in the *_service* file
 
-4. update *python-PintServer.spec* with the new version and release
+5. update *python-PintServer.spec* with the new version and release
 
-5. submit the changes
+6. submit the changes
 
