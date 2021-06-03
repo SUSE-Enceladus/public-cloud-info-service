@@ -265,18 +265,19 @@ def get_provider_images_for_region_and_state(provider, region, state):
     if provider == 'microsoft':
         return _get_azure_images_for_region_state(region, state)
 
-    if (hasattr(PROVIDER_IMAGES_MODEL_MAP[provider], 'region') and
-            hasattr(PROVIDER_IMAGES_MODEL_MAP[provider], 'state')):
-        region_names = []
-        for each in get_provider_regions(provider):
-            region_names.append(each['name'])
-        if state in ImageState.__members__ and region in region_names:
+    region_names = []
+    for each in get_provider_regions(provider):
+        region_names.append(each['name'])
+    if state in ImageState.__members__ and region in region_names:
+        if (hasattr(PROVIDER_IMAGES_MODEL_MAP[provider], 'region')):
             images = PROVIDER_IMAGES_MODEL_MAP[provider].query.filter(
                 PROVIDER_IMAGES_MODEL_MAP[provider].region == region,
                 PROVIDER_IMAGES_MODEL_MAP[provider].state == state)
-            return [get_formatted_dict(image) for image in images]
         else:
-            abort(Response('', status=404))
+            images = PROVIDER_IMAGES_MODEL_MAP[provider].query.filter(
+                PROVIDER_IMAGES_MODEL_MAP[provider].state == state)
+
+        return [get_formatted_dict(image) for image in images]
     else:
         abort(Response('', status=404))
 
