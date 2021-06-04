@@ -56,6 +56,8 @@ null_to_empty = lambda s : s or ''
 REGIONSERVER_SMT_MAP = {
     'smt': 'update',
     'regionserver': 'region',
+    'regionserver-sap': 'region',
+    'regionserver-sles': 'region',
     'update': 'update',
     'region': 'region'
 }
@@ -110,6 +112,13 @@ def json_to_xml(json_obj, collection_name, element_name):
 def get_formatted_dict(obj, extra_attrs=None, exclude_attrs=None):
     obj_dict = {}
     for attr in obj.__dict__.keys():
+        # FIXME(gyee): the orignal Pint server does not return the "changeinfo"
+        # or "urn" attribute if it's empty. So we'll need to do the same here.
+        # IMHO, I consider that a bug in the original Pint server as we should
+        # return all attributes regardless whether its empty or not.
+        if attr.lower() in ['urn', 'changeinfo'] and not obj.__dict__[attr]:
+            continue
+
         if exclude_attrs and attr in exclude_attrs:
             continue
         elif attr[0] == '_':
@@ -131,20 +140,30 @@ def get_formatted_dict(obj, extra_attrs=None, exclude_attrs=None):
     return obj_dict
 
 
-def get_provider_servers_for_type(provider, server_type):
-    servers = []
+def get_mapped_server_type_for_provider(provider, server_type):
     if server_type not in REGIONSERVER_SMT_MAP:
-        abort(Response('', status=404))    
+        abort(Response('', status=404))
     mapped_server_type = REGIONSERVER_SMT_MAP[server_type]
     server_types_json = get_provider_servers_types(provider)
     server_types = [t['name'] for t in server_types_json]
-    if (PROVIDER_SERVERS_MODEL_MAP.get(provider) != None and
-            mapped_server_type in server_types):
-        servers = PROVIDER_SERVERS_MODEL_MAP[provider].query.filter(
-            PROVIDER_SERVERS_MODEL_MAP[provider].type == mapped_server_type)
-        return [get_formatted_dict(server) for server in servers]
-    else:
+    if mapped_server_type not in server_types:
         abort(Response('', status=404))
+    return mapped_server_type
+
+
+def get_provider_servers_for_type(provider, server_type):
+    servers = []
+    # NOTE(gyee): currently we don't have DB tables for both Alibaba and
+    # Oracle servers. In order to maintain compatibility with the
+    # existing Pint server, we are returning an empty list.
+    if not PROVIDER_SERVERS_MODEL_MAP.get(provider):
+        return servers
+
+    mapped_server_type = get_mapped_server_type_for_provider(
+        provider, server_type)
+    servers = PROVIDER_SERVERS_MODEL_MAP[provider].query.filter(
+        PROVIDER_SERVERS_MODEL_MAP[provider].type == mapped_server_type)
+    return [get_formatted_dict(server) for server in servers]
 
 
 def get_provider_servers_types(provider):
@@ -217,8 +236,10 @@ def _get_azure_servers(region, server_type=None):
 
     # get all the severs for that region
     if server_type:
+        mapped_server_type = get_mapped_server_type_for_provider(
+            'microsoft', server_type)
         servers = MicrosoftServersModel.query.filter(
-            MicrosoftServersModel.type == server_type,
+            MicrosoftServersModel.type == mapped_server_type,
             MicrosoftServersModel.region.in_(all_regions))
     else:
         servers = MicrosoftServersModel.query.filter(
@@ -312,18 +333,23 @@ def get_provider_servers_for_region(provider, region):
 
 def get_provider_servers_for_region_and_type(provider, region, server_type):
     servers = []
+    # NOTE(gyee): for Alibaba and Oracle where we don't have any servers,
+    # we are returning an empty list to be backward compatible.
+    if not PROVIDER_SERVERS_MODEL_MAP.get(provider):
+        return servers
+
     if provider == 'microsoft':
         return _get_azure_servers(region, server_type)
 
+    mapped_server_type = get_mapped_server_type_for_provider(
+        provider, server_type)
     region_names = []
     for each in get_provider_regions(provider):
         region_names.append(each['name'])
-    if (PROVIDER_SERVERS_MODEL_MAP.get(provider) != None and
-            server_type in get_provider_servers_types(provider) and
-            region in region_names):
+    if region in region_names:
         servers = PROVIDER_SERVERS_MODEL_MAP[provider].query.filter(
             PROVIDER_SERVERS_MODEL_MAP[provider].region == region,
-            PROVIDER_SERVERS_MODEL_MAP[provider].type == server_type)
+            PROVIDER_SERVERS_MODEL_MAP[provider].type == mapped_server_type)
         return [get_formatted_dict(server) for server in servers]
     else:
         abort(Response('', status=404))
