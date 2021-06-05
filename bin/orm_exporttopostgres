@@ -8,6 +8,7 @@ import argparse
 from datetime import datetime
 import glob
 import os
+import re
 import subprocess
 import sys
 
@@ -65,6 +66,7 @@ def get_commit_date(data_file):
 def extract_provider_data_rows(parent_node, child_name):
     rows = []
 
+    server_type_matcher = re.compile('^(?:smt|regionserver)(?:-([A-Za-z]+))?$')
     for child_node in parent_node.findall(child_name):
         row = {}
         for attr, value in child_node.items():
@@ -75,6 +77,13 @@ def extract_provider_data_rows(parent_node, child_name):
                     attr_value = ServerType.update
                 else:
                     attr_value = ServerType.region
+                # NOTE: make sure we also populate the 'shape' column if
+                # 'smt' or 'regionserver' has '-sles' or '-sap' postfix.
+                m = server_type_matcher.match(value)
+                if m and m.group(1):
+                    row['shape'] = m.group(1)
+                else:
+                    row['shape'] = ''
             elif attr == 'state':
                 attr_value = getattr(ImageState, value)
             elif attr in ['deletedon', 'deprecatedon', 'publishedon']:
@@ -252,7 +261,7 @@ def orm_update_tables(db, provider, tables, version):
 def orm_load_database(args):
     os.environ['POSTGRES_HOST'] = args.host
     os.environ['POSTGRES_PORT'] = str(args.port)
-    os.environ['POSTGRES_DATABASE'] = args.db
+    os.environ['POSTGRES_DB'] = args.db
     os.environ['POSTGRES_USER'] = args.user
     os.environ['POSTGRES_PASSWORD'] = args.password
 
