@@ -28,9 +28,13 @@ urls_to_hit = ["/v1/providers",
 time_buckets = {}
 
 def task(base_url):
-    print("Executing the Task")
     url = base_url + random.choice(urls_to_hit)
+    print("Hitting the endpoint", url)
     resp = requests.get(url, verify=False)
+    if resp.status_code != 500:
+        print("Response OK", resp.status_code)
+    else:
+        print("Response Not OK", resp.status_code)
     increment_time_bucket(resp.elapsed.total_seconds())
     #print("Task Executed {}".format(threading.current_thread()))
 
@@ -102,3 +106,4 @@ def main(argv):
 
 if __name__ == '__main__':
     main(sys.argv[1:])
+
