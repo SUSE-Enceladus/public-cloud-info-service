@@ -61,6 +61,7 @@ class ProviderImageBase(PintBase):
 
 class ProviderServerBase(PintBase):
     type = Column(Enum(ServerType))
+    shape = Column(String(10))
     name = Column(String(100))
     # NOTE(gyee): the INET type is specific to PostgreSQL. If in the future
     # we decided to support other vendors, we'll need to update this

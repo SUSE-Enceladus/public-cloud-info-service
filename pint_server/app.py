@@ -62,6 +62,11 @@ REGIONSERVER_SMT_MAP = {
     'region': 'region'
 }
 
+REGIONSERVER_SMT_REVERSED_MAP = {
+    'update': 'smt',
+    'region': 'regionserver'
+}
+
 PROVIDER_IMAGES_MODEL_MAP = {
     'amazon': AmazonImagesModel,
     'google': GoogleImagesModel,
@@ -119,6 +124,11 @@ def get_formatted_dict(obj, extra_attrs=None, exclude_attrs=None):
         if attr.lower() in ['urn', 'changeinfo'] and not obj.__dict__[attr]:
             continue
 
+        # NOTE: the "shape" attribute will be processed together with "type"
+        # as it is internal only
+        if attr.lower() == 'shape':
+            continue
+
         if exclude_attrs and attr in exclude_attrs:
             continue
         elif attr[0] == '_':
@@ -130,7 +140,15 @@ def get_formatted_dict(obj, extra_attrs=None, exclude_attrs=None):
             elif isinstance(value, ImageState):
                 obj_dict[attr] = obj.state.value
             elif isinstance(value, ServerType):
-                obj_dict[attr] = obj.type.value
+                # NOTE(gyee): we need to reverse map the server type
+                # to make it backward compatible
+                if obj.__dict__['shape']:
+                    obj_dict[attr] = "%s-%s" % (
+                        REGIONSERVER_SMT_REVERSED_MAP[obj.type.value],
+                        obj.__dict__['shape'])
+                else:
+                     obj_dict[attr] = (
+                         REGIONSERVER_SMT_REVERSED_MAP[obj.type.value])
             elif isinstance(value, datetime.date):
                 obj_dict[attr] = value.strftime('%Y%m%d')
             else:
