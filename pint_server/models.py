@@ -27,6 +27,8 @@ Base = declarative_base()
 
 
 class ImageState(enum.Enum):
+    __enum_name__ = 'image_state'
+
     deleted = 'deleted'
     deprecated = 'deprecated'
     inactive = 'inactive'
@@ -37,6 +39,8 @@ class ImageState(enum.Enum):
 
 
 class ServerType(enum.Enum):
+    __enum_name__ = 'server_type'
+
     region = 'region'
     update = 'update'
 
@@ -51,7 +55,7 @@ class PintBase(object):
 
 class ProviderImageBase(PintBase):
     name = Column(String(255), primary_key=True)
-    state = Column(Enum(ImageState))
+    state = Column(Enum(ImageState, name=ImageState.__enum_name__))
     replacementname = Column(String(255))
     publishedon = Column(Date, primary_key=True)
     deprecatedon = Column(Date)
@@ -60,7 +64,7 @@ class ProviderImageBase(PintBase):
 
 
 class ProviderServerBase(PintBase):
-    type = Column(Enum(ServerType))
+    type = Column(Enum(ServerType, name=ServerType.__enum_name__))
     shape = Column(String(10))
     name = Column(String(100))
     # NOTE(gyee): the INET type is specific to PostgreSQL. If in the future

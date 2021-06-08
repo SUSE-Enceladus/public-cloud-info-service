@@ -6,6 +6,44 @@ Public Cloud Information Service enables users to lookup Public Cloud
 images and services information via REST API. Image and Server information
 is tracked in a PostgreSQL database.
 
+=============
+Prerequisites
+=============
+
+Prior to running Pint Server, you must prepare an instance of PostgreSQL
+database with the up-to-date Pint Server schema and data.
+
+1. follow the instructions to install an instance of PostgreSQL from your
+   favorite vendor
+2. clone the *pint-data* repo
+3. create the Python 3.6 development virtual environment
+
+   .. code-block::
+
+     ./bin/create_dev_venv.sh
+
+4. activate the development virtual environment
+
+   .. code-block::
+
+     source dev_venv/bin/activate
+
+5. run the *./bin/pint_db_migrate.sh* CLI to perform scheme and data upgrade.
+   The script itself is idempotent so it won't fail if the schema and data
+   are already up-to-date.
+
+   .. code-block::
+
+     ./bin/pint_db_migrate.sh -h db_host -U db_user -W db_password -n db_name --ssl-mode required --root-cert /etc/ssl/postgresql_ca_cert.pem upgrade --pint-data /home/foo/pint-data
+
+   **NOTE**: in the above example, */home/foo/pint-data* is where you clone the
+   *pint-data* repo. In other words, the XML data files are expected to be
+   located in the */home/foo/pint-data/data* directory.
+
+   **NOTE**: in a development environment where TLS is not enabled for the
+   PostgreSQL instance, the *--ssl-mode* and *--root-cert* arguments are
+   not needed.
+
 ===========
 Quick Start
 ===========
@@ -38,14 +76,17 @@ To run the standalone Flask application:
 
      source dev_venv/bin/activate
 
-3. run the standalone Flask application. By default, it is listening for HTTP
+3. update *./bin/run_standalone.sh* with the correct PostgreSQL host, user,
+   password, and database name.
+
+4. run the standalone Flask application. By default, it is listening for HTTP
    requests on port 5000.
 
    .. code-block::
 
      ./bin/run_standalone.sh
 
-4. open a separate terminal and test it with curl command
+5. open a separate terminal and test it with curl command
 
    .. code-block::
 
@@ -71,13 +112,16 @@ To run the serverless application via SAM CLI:
 
      make aws
 
-3. run serverless application
+3. update *./local_test_env.json* with the correct PostgreSQL host, user,
+   password, and database name.
+
+4. run serverless application
 
    .. code-block::
 
      ./bin/run_sam_local.sh
 
-4. open a separate terminal and test it with curl command
+5. open a separate terminal and test it with curl command
 
    .. code-block::
 
@@ -209,3 +253,62 @@ For example:
 .. code-block::
 
       locust -f pint_server/tests/loadtest/locustfile.py  --host http://localhost:5000 --headless -u 100 -r 10 -t10m
+
+=====================
+How To Upgrade Schema
+=====================
+
+Here's an example of a normal workflow for performing schema update.
+
+1. create a new changeset file in *pint_server/pint_db_migrate/versions/*. The
+   new changeset file must have the following format: *<d><d><d>_<string>.py*.
+   The first three digit of the filename is the version number, follow by an
+   underscore and a meaningful name of the changeset. The new changeset must
+   have the highest version number, which is usually a plus one increment of
+   the last version. For example, if *pint_server/pint_db_migrate/versions/*
+   currently contains a file *001_in_the_beginning.py*. The next changeset
+   should starts with *002*. Say if we want to add a new column *foo* to the
+   *amazonimages* table. We should create a new file named *002_add_foo_column_to_amazonimages.py* with the following content:
+
+   .. code-block::
+
+     from sqlalchemy import Table, MetaData, String, Column
+
+     def upgrade(migrate_engine):
+         meta = MetaData(bind=migrate_engine)
+         amazonimages = Table('amazonimages', meta, autoload=True)
+         foo = Column('foo', String(100))
+         foo.create(amazonimages)
+
+     def downgrade(migrate_engine):
+         meta = MetaData(bind=migrate_engine)
+         amazonimages = Table('amazonimages', meta, autoload=True)
+         amazonimages.c.foo.drop()
+
+2. create the Python 3.6 development virtual environment
+
+   .. code-block::
+
+     ./bin/create_dev_venv.sh
+
+3. activate the development virtual environment
+
+   .. code-block::
+
+     source dev_venv/bin/activate
+
+4. run the *./bin/pint_db_migrate.sh* CLI to perform scheme and data upgrade.
+   The script itself is idempotent so it won't fail if the schema and data
+   are already up-to-date.
+
+   .. code-block::
+
+     ./bin/pint_db_migrate.sh -h db_host -U db_user -W db_password -n db_name --ssl-mode required --root-cert /etc/ssl/postgresql_ca_cert.pem upgrade --pint-data /home/foo/pint-data
+
+   **NOTE**: in the above example, */home/foo/pint-data* is where you clone the
+   *pint-data* repo. In other words, the XML data files are expected to be
+   located in the */home/foo/pint-data/data* directory.
+
+   **NOTE**: in a development environment where TLS is not enabled for the
+   PostgreSQL instance, the *--ssl-mode* and *--root-cert* arguments are
+   not needed.
