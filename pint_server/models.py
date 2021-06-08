@@ -46,6 +46,11 @@ class ServerType(enum.Enum):
 
 
 class PintBase(object):
+    @property
+    def tablename(self):
+        """Return table name."""
+        return self.__tablename__
+
     def __repr__(self):
         return "<%s(%s)>" % (self.__class__.__name__,
                              ", ".join(["%s=%s" % (k, repr(getattr(self, k)))
