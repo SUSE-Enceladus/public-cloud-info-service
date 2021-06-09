@@ -47,7 +47,7 @@ To run the standalone Flask application:
 
 4. open a separate terminal and test it with curl command
 
-   .. code-black::
+   .. code-block::
 
      curl http://127.0.0.1:5000/v1/providers
 
@@ -79,7 +79,7 @@ To run the serverless application via SAM CLI:
 
 4. open a separate terminal and test it with curl command
 
-   .. code-black::
+   .. code-block::
 
      curl http://127.0.0.1:5000/v1/providers
 
@@ -172,3 +172,40 @@ You can pass the options like --minutes, --hours, --seconds to pytest
 
   python -m pytest --minutes 15 --base-url http://localhost:5000 pint_server/tests/functional
 
+Running the Load Tests Using Locust
+-----------------------------------
+Follow the steps below to run the locust load tests:
+
+Pre-requisite
+These load tests expect the environment under test to be setup correctly.
+
+1. Setup a python virtual environment
+
+   .. code-block::
+
+     ./bin/create_test_venv.sh
+
+2. Activate the python virtual environment created in Step 1
+
+   .. code-block::
+
+     source test_venv/bin/activate
+
+3. Run the locust load tests
+   For example:
+
+   .. code-block::
+
+     locust -f pint_server/tests/loadtest/locustfile.py  --host http://localhost:5000 --headless -u 100 -r 10
+
+   .. code-block::
+
+    --host is where the pint service is running
+    -u specifies the number of users to spawn
+    -r specifies the number of users to start per second
+
+If you want to specify the runtime for the loadtests, you can do so with the -t option:
+For example:
+.. code-block::
+
+      locust -f pint_server/tests/loadtest/locustfile.py  --host http://localhost:5000 --headless -u 100 -r 10 -t10m

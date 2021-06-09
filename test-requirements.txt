@@ -6,3 +6,4 @@ Flask-SQLAlchemy
 lxml
 requests
 pytest-stress
+locust
