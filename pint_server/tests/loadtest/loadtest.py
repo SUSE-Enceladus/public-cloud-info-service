@@ -46,11 +46,15 @@ def increment_time_bucket(seconds):
       time_buckets[index] = 1
 
 def print_time_buckets():
+    total_count = 0
     print("========== response time histogram (seconds) ==========")
     for key in sorted (time_buckets.keys()) :
       timeStart = key * 0.5
       timeEnd = (key + 1) * 0.5
-      print(timeStart , " - ", timeEnd, " : " , time_buckets[key])
+      print("Bucket: ", timeStart , " - ", timeEnd, " seconds : " , time_buckets[key], " requests")
+      total_count = total_count + time_buckets[key]
+    print("Total Count of Requests handled: ", total_count)
+
 
 def main(argv):
     #handle command line arguments
