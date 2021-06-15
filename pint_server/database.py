@@ -166,7 +166,7 @@ def init_db(dbconfig=None, outputfile=None, echo=None,
         echo (bool): Whether or not all statements are logged to the
             default log handler
             https://docs.sqlalchemy.org/en/14/core/engines.html#sqlalchemy.create_engine.params.echo
-        hide_paramaters (bool): if false then statement parameters
+        hide_parameters (bool): if false then statement parameters
             will not be logged to INFO leverl log messages or in
             logged representation of error reports.
             https://docs.sqlalchemy.org/en/14/core/engines.html#sqlalchemy.create_engine.params.hide_parameters
@@ -188,7 +188,7 @@ def init_db(dbconfig=None, outputfile=None, echo=None,
         engine_url = create_postgres_url_from_env()
 
     engine = create_engine(engine_url, convert_unicode=True,
-                           echo=echo, hide_paramaters=hide_paramaters)
+                           echo=echo, hide_parameters=hide_parameters)
 
     db_session = scoped_session(sessionmaker(autocommit=False,
                                              autoflush=False,
