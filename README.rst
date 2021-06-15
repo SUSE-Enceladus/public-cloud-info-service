@@ -303,7 +303,7 @@ Here's an example of a normal workflow for performing schema update.
 
    .. code-block::
 
-     ./bin/pint_db_migrate.sh -h db_host -U db_user -W db_password -n db_name --ssl-mode required --root-cert /etc/ssl/postgresql_ca_cert.pem upgrade --pint-data /home/foo/pint-data
+     ./bin/pint_db_migrate.sh -h db_host -U db_user -W db_password -n db_name --ssl-mode require --root-cert /etc/ssl/postgresql_ca_cert.pem upgrade --pint-data /home/foo/pint-data
 
    **NOTE**: in the above example, */home/foo/pint-data* is where you clone the
    *pint-data* repo. In other words, the XML data files are expected to be
