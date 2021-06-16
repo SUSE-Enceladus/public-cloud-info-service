@@ -162,23 +162,24 @@ def get_mapped_server_type_for_provider(provider, server_type):
     if server_type not in REGIONSERVER_SMT_MAP:
         abort(Response('', status=404))
     mapped_server_type = REGIONSERVER_SMT_MAP[server_type]
-    server_types_json = get_provider_servers_types(provider)
-    server_types = [t['name'] for t in server_types_json]
-    if mapped_server_type not in server_types:
-        abort(Response('', status=404))
+    if PROVIDER_SERVERS_MODEL_MAP.get(provider):
+        server_types_json = get_provider_servers_types(provider)
+        server_types = [t['name'] for t in server_types_json]
+        if mapped_server_type not in server_types:
+            abort(Response('', status=404))
     return mapped_server_type
 
 
 def get_provider_servers_for_type(provider, server_type):
     servers = []
+    mapped_server_type = get_mapped_server_type_for_provider(
+        provider, server_type)
     # NOTE(gyee): currently we don't have DB tables for both Alibaba and
     # Oracle servers. In order to maintain compatibility with the
     # existing Pint server, we are returning an empty list.
     if not PROVIDER_SERVERS_MODEL_MAP.get(provider):
         return servers
 
-    mapped_server_type = get_mapped_server_type_for_provider(
-        provider, server_type)
     servers = PROVIDER_SERVERS_MODEL_MAP[provider].query.filter(
         PROVIDER_SERVERS_MODEL_MAP[provider].type == mapped_server_type)
     return [get_formatted_dict(server) for server in servers]
@@ -350,17 +351,17 @@ def get_provider_servers_for_region(provider, region):
 
 
 def get_provider_servers_for_region_and_type(provider, region, server_type):
+    if provider == 'microsoft':
+        return _get_azure_servers(region, server_type)
+
     servers = []
+    mapped_server_type = get_mapped_server_type_for_provider(
+        provider, server_type)
     # NOTE(gyee): for Alibaba and Oracle where we don't have any servers,
     # we are returning an empty list to be backward compatible.
     if not PROVIDER_SERVERS_MODEL_MAP.get(provider):
         return servers
 
-    if provider == 'microsoft':
-        return _get_azure_servers(region, server_type)
-
-    mapped_server_type = get_mapped_server_type_for_provider(
-        provider, server_type)
     region_names = []
     for each in get_provider_regions(provider):
         region_names.append(each['name'])
