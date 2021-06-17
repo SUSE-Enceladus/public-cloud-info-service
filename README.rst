@@ -309,6 +309,9 @@ Here's an example of a normal workflow for performing schema update.
    *pint-data* repo. In other words, the XML data files are expected to be
    located in the */home/foo/pint-data/data* directory.
 
+   **NOTE**: The --root-cert is path to the file with the RDS CA bundle which can be obtained from 
+   https://s3.amazonaws.com/rds-downloads/rds-combined-ca-bundle.pem
+
    **NOTE**: in a development environment where TLS is not enabled for the
    PostgreSQL instance, the *--ssl-mode* and *--root-cert* arguments are
    not needed.
