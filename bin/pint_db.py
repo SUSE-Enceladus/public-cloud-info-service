@@ -281,8 +281,8 @@ def orm_update_tables(db, provider, tables, version):
         orm_update_table(db, provider, table_name, table_rows, version)
 
 
-def orm_load_database(pint_data):
-    db = init_db()
+def orm_load_database(pint_data, db_logfile=None):
+    db = init_db(outputfile=db_logfile)
 
     data_files = gen_data_files_list(pint_data_repo=pint_data)
 
@@ -330,8 +330,8 @@ def get_version_or_create_control(db_uri, repository):
     try:
         return migrate_api.db_version(db_uri, repository)
     except migrate_exceptions.DatabaseNotControlledError:
-        logging.info(('Database not under version control. Putting it under '
-                      'version control.'))
+        LOG.info(('Database not under version control. Putting it under '
+                  'version control.'))
         migrate_api.version_control(db_uri, repository)
         return migrate_api.db_version(db_uri, repository)
 
@@ -377,18 +377,23 @@ def db_version(ctx):
 
 @click.command(help='Upgrade database schema')
 @click.option('--pint-data', help='Path to pint-data dir', type=str)
+@click.option('--db-logfile', help='DB debug log file', default=None,
+              required=False, type=str)
 @click.pass_context
-def upgrade(ctx, pint_data):
+def upgrade(ctx, pint_data, db_logfile):
     try:
+        LOG.info('Creating version control')
         # first create the version control if it does not exist
         get_version_or_create_control(ctx.obj['db_uri'], ctx.obj['repository'])
 
+        LOG.info('Upgrading schema')
         # upgrade schema
         migrate_api.upgrade(ctx.obj['db_uri'], ctx.obj['repository'])
 
+        LOG.info('Updating data')
         # import data
         os.environ['DATABASE_URI'] = ctx.obj['db_uri']
-        orm_load_database(pint_data)
+        orm_load_database(pint_data, db_logfile=db_logfile)
         print('Pint database successfully upgraded.')
     except Exception as e:
         print('Failed to upgrade Pint database: %s' % (e))

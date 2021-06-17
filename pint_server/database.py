@@ -18,6 +18,7 @@
 # NOTE(gyee):
 # see https://flask.palletsprojects.com/en/1.1.x/patterns/sqlalchemy/
 
+import logging
 import os
 
 from sqlalchemy import create_engine
