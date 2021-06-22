@@ -28,6 +28,7 @@ from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from xml.dom import minidom
 import xml.etree.ElementTree as ET
 
+import pint_server
 from pint_server.database import init_db
 from pint_server.models import (ImageState, AmazonImagesModel,
                                 OracleImagesModel, AlibabaImagesModel,
@@ -548,6 +549,12 @@ def get_provider_category_data_version(provider):
     assert_valid_category(category)
     version = get_data_version_for_provider_category(provider, category)
     return make_response(version, None, None)
+
+
+@app.route('/package-version', methods=['GET'])
+def get_package_version():
+    return make_response(
+        {'package version': pint_server.__VERSION__}, None, None)
 
 
 @app.route('/', methods=['GET'])

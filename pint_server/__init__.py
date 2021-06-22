@@ -15,6 +15,9 @@
 # To contact SUSE about this file by physical or electronic mail,
 # you may find current contact information at www.suse.com
 
+# NOTE(gyee): must update the version here on a new release
+__VERSION__ = '2.0.3'
+
 from pint_server.database import init_db
 from pint_server.models import (AlibabaImagesModel, AmazonImagesModel,
                     AmazonServersModel, GoogleImagesModel,
