@@ -16,8 +16,11 @@
 # you may find current contact information at www.suse.com
 
 import enum
+import uuid
 
-from sqlalchemy import Column, Date, Enum, Numeric, String
+from sqlalchemy import (
+    Column, Date, Enum, Numeric, String, Integer
+)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects import postgresql
 
@@ -69,14 +72,16 @@ class ProviderImageBase(PintBase):
 
 
 class ProviderServerBase(PintBase):
+    id = Column(Integer, primary_key=True)
     type = Column(Enum(ServerType, name=ServerType.__enum_name__))
     shape = Column(String(10))
     name = Column(String(100))
     # NOTE(gyee): the INET type is specific to PostgreSQL. If in the future
     # we decided to support other vendors, we'll need to update this
     # column type accordingly.
-    ip = Column(postgresql.INET, primary_key=True)
-    region = Column(String(100), primary_key=True)
+    ip = Column(postgresql.INET)
+    region = Column(String(100), nullable=False)
+    ipv6 = Column(postgresql.INET)
 
 
 class AmazonImagesModel(Base, ProviderImageBase):
