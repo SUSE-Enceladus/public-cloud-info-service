@@ -188,8 +188,19 @@ def init_db(dbconfig=None, outputfile=None, echo=None,
     else:
         engine_url = create_postgres_url_from_env()
 
-    engine = create_engine(engine_url, convert_unicode=True,
-                           echo=echo, hide_parameters=hide_parameters)
+    # TODO(rtamalin): Remove this try/except hackery once we move forward
+    # to being based on SLE 15 SP3 or later.
+    try:
+        engine = create_engine(engine_url, convert_unicode=True,
+                               echo=echo, hide_parameters=hide_parameters)
+    except TypeError as e:
+        # If we failed because of the hide_parameters argument then
+        # try again without it.
+        if 'hide_parameters' in str(e):
+            engine = create_engine(engine_url, convert_unicode=True,
+                                   echo=echo)
+        else:
+            raise
 
     db_session = scoped_session(sessionmaker(autocommit=False,
                                              autoflush=False,
