@@ -42,17 +42,12 @@ def test_get_provider_servers_types(baseurl, provider, extension):
     resp = requests.get(url, verify=False)
     expected_status_code = 200
     validate(resp, expected_status_code, extension)
-    #until pint-ng goes live
-    if 'susepubliccloudinfo.suse.com' in baseurl:
+    if provider == 'amazon' or provider == 'google' or 'provider' == 'microsoft':
+        assert "region" in resp.text
+        assert "update" in resp.text
+    if provider == 'alibaba' or provider == 'oracle':
         assert "smt" in resp.text
         assert "regionserver" in resp.text
-    else:
-        if provider == 'amazon' or provider == 'google' or 'provider' == 'microsoft':
-            assert "region" in resp.text
-            assert "update" in resp.text
-        if provider == 'alibaba' or provider == 'oracle':
-            assert "smt" in resp.text
-            assert "regionserver" in resp.text
 
 @pytest.mark.parametrize("extension", ['', '.json', '.xml'])
 def test_get_image_states(baseurl, extension):
@@ -191,18 +186,14 @@ def test_provider_category(baseurl, provider, category, extension):
 @pytest.mark.parametrize("category", ['images', 'servers'])
 @pytest.mark.parametrize("provider", ['alibaba', 'amazon', 'google', 'microsoft', 'oracle'])
 def test_get_provider_category_data_version(baseurl, provider, category, extension):
-    #skip until new pint-ng is available in susepubliccloudinfo.suse.com
-    if 'susepubliccloudinfo.suse.com' in baseurl:
-        pytest.skip("vsersions api not available in susepubliccloudinfo.suse.com")
+    url = baseurl + '/v1/' + provider + '/dataversion' + extension + '?category=' + category
+    resp = requests.get(url, verify=False)
+    if category == 'servers' and (provider == 'alibaba' or provider == 'oracle'):
+        expected_status_code = 404
+        validate(resp, expected_status_code, extension)
     else:
-        url = baseurl + '/v1/' + provider + '/dataversion' + extension + '?category=' + category
-        resp = requests.get(url, verify=False)
-        if category == 'servers' and (provider == 'alibaba' or provider == 'oracle'):
-            expected_status_code = 404
-            validate(resp, expected_status_code, extension)
-        else:
-            expected_status_code = 200
-            validate(resp, expected_status_code, extension)
+        expected_status_code = 200
+        validate(resp, expected_status_code, extension)
 
 #negative tests
 @pytest.mark.parametrize("extension", ['', '.json', '.xml'])
