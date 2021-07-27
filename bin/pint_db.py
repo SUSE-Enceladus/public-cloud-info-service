@@ -90,8 +90,10 @@ def extract_provider_data_rows(parent_node, child_name):
         row = {}
         for attr, value in child_node.items():
             if not value:
-                continue
-            if attr == 'type':
+                # NOTE: setting it to None seem to be compatible with any data
+                # type
+                attr_value = None
+            elif attr == 'type':
                 if 'smt' in value:
                     attr_value = ServerType.update
                 else:
