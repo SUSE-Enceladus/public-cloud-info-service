@@ -15,10 +15,11 @@
 # To contact SUSE about this file by physical or electronic mail,
 # you may find current contact information at www.suse.com
 
-import argparse
 from datetime import datetime
-import glob
+from deepdiff import DeepDiff
+import argparse
 import click
+import glob
 import logging
 import os
 import re
@@ -82,6 +83,19 @@ def get_commit_date(data_file):
     return output.stdout.decode('utf-8')
 
 
+def has_duplicate(rows, new_row):
+    LOG.info('Checking for duplicates')
+    for row in rows:
+        diff = DeepDiff(row, new_row, ignore_order=True)
+        if not diff:
+            msg = 'Found duplicate row: %s' % (new_row)
+            print(msg)
+            LOG.warn(msg)
+            return True
+    LOG.info('Good news! No duplicates found.')
+    return False
+
+
 def extract_provider_data_rows(parent_node, child_name):
     rows = []
 
@@ -110,7 +124,12 @@ def extract_provider_data_rows(parent_node, child_name):
             else:
                 attr_value = value
             row[attr] = attr_value
-        rows.append(row)
+        # Don't insert if there's a duplicate
+        if not has_duplicate(rows, row):
+            LOG.info('Adding row: %s' % (row))
+            rows.append(row)
+        else:
+            LOG.info('Skipping %s' % (row))
 
     return rows
 
@@ -281,7 +300,7 @@ def orm_update_tables(db, provider, tables, version):
         orm_update_table(db, provider, table_name, table_rows, version)
 
 
-def orm_load_database(pint_data, db_logfile=None):
+def orm_load_database(pint_data, db_logfile=None, check_mode=False):
     db = init_db(outputfile=db_logfile)
 
     data_files = gen_data_files_list(pint_data_repo=pint_data)
@@ -290,6 +309,10 @@ def orm_load_database(pint_data, db_logfile=None):
     data_store = {}
     for data_file in data_files:
         extract_data_from_file(data_file, data_store)
+
+    if check_mode:
+        # check data only, do not import
+        return
 
     # populate tables with data that was extracted
     for provider, provider_info in data_store.items():
@@ -377,10 +400,12 @@ def db_version(ctx):
 
 @click.command(help='Upgrade database schema')
 @click.option('--pint-data', help='Path to pint-data dir', type=str)
+@click.option('--check-mode', help=('Data sanity check only. '
+              'Do not preceed with data import.'), is_flag=True)
 @click.option('--db-logfile', help='DB debug log file', default=None,
               required=False, type=str)
 @click.pass_context
-def upgrade(ctx, pint_data, db_logfile):
+def upgrade(ctx, pint_data, check_mode, db_logfile):
     try:
         LOG.info('Creating version control')
         # first create the version control if it does not exist
@@ -393,7 +418,8 @@ def upgrade(ctx, pint_data, db_logfile):
         LOG.info('Updating data')
         # import data
         os.environ['DATABASE_URI'] = ctx.obj['db_uri']
-        orm_load_database(pint_data, db_logfile=db_logfile)
+        orm_load_database(pint_data, db_logfile=db_logfile,
+                          check_mode=check_mode)
         print('Pint database successfully upgraded.')
     except Exception as e:
         print('Failed to upgrade Pint database: %s' % (e))
