@@ -258,46 +258,54 @@ For example:
 How To Upgrade Schema
 =====================
 
+We are using Alembic framework to facility schema migration. For more details,
+see https://alembic.sqlalchemy.org/en/latest/tutorial.html.
+
 Here's an example of a normal workflow for performing schema update.
 
-1. create a new changeset file in *pint_server/pint_db_migrate/versions/*. The
-   new changeset file must have the following format: *<d><d><d>_<string>.py*.
-   The first three digit of the filename is the version number, follow by an
-   underscore and a meaningful name of the changeset. The new changeset must
-   have the highest version number, which is usually a plus one increment of
-   the last version. For example, if *pint_server/pint_db_migrate/versions/*
-   currently contains a file *001_in_the_beginning.py*. The next changeset
-   should starts with *002*. Say if we want to add a new column *foo* to the
-   *amazonimages* table. We should create a new file named *002_add_foo_column_to_amazonimages.py* with the following content:
-
-   .. code-block::
-
-     from sqlalchemy import Table, MetaData, String, Column
-
-     def upgrade(migrate_engine):
-         meta = MetaData(bind=migrate_engine)
-         amazonimages = Table('amazonimages', meta, autoload=True)
-         foo = Column('foo', String(100))
-         foo.create(amazonimages)
-
-     def downgrade(migrate_engine):
-         meta = MetaData(bind=migrate_engine)
-         amazonimages = Table('amazonimages', meta, autoload=True)
-         amazonimages.c.foo.drop()
-
-2. create the Python 3.6 development virtual environment
+1. create the Python 3.6 development virtual environment
 
    .. code-block::
 
      ./bin/create_dev_venv.sh
 
-3. activate the development virtual environment
+2. activate the development virtual environment
 
    .. code-block::
 
      source dev_venv/bin/activate
 
-4. run the *./bin/pint_db_migrate.sh* CLI to perform scheme and data upgrade.
+3. update `pint_server/models.py` to reflect the latest changes
+
+4. copy `pint_server/alembic.ini.sample` to `pint_server/alembic.ini`
+
+   .. code-block::
+
+     cp pint_server/alembic.ini.sample pint_server/alembic.ini
+
+5. uncomment and set the `sqlalchemy.url` property in
+   `pint_server/alembic.ini` to point to database to which to generate the
+   next version of the schema. Make sure the database scheme is up-to-date
+   prior to generate the next revision.
+
+6. auto generate the next revision. Note that Alembic will use the existing
+   database as the baseline to generate the next revision so make sure the
+   existing database is up-to-date. To auto generate the next revision:
+
+   .. code-block::
+
+   cd public-cloud-info-service/pint_server
+   alembic revision --autogenerate -m 'add some table'
+
+   If the above command is successful, you'll see the auto generate
+   revision file in `./pint_db_migrate/versions/`. The file is named
+   `<revision>_add_some_table.py`.
+
+7. *IMPORTANT:* the auto-generated migration script may not have everything
+   you need. Make sure to read the code carefully and make the necessary
+   changes in order to complete the code.
+
+8. run the *./bin/pint_db_migrate.sh* CLI to perform scheme and data upgrade.
    The script itself is idempotent so it won't fail if the schema and data
    are already up-to-date.
 
