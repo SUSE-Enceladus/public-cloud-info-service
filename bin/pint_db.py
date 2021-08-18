@@ -15,19 +15,18 @@
 # To contact SUSE about this file by physical or electronic mail,
 # you may find current contact information at www.suse.com
 
-import argparse
+from alembic import command
+from alembic.config import Config
 from datetime import datetime
-import glob
+from lxml import etree
+import argparse
 import click
+import glob
 import logging
 import os
 import re
 import subprocess
 import sys
-
-from lxml import etree
-from migrate import exceptions as migrate_exceptions
-from migrate.versioning import api as migrate_api
 
 from pint_server.database import init_db
 from pint_server.models import (
@@ -284,7 +283,7 @@ def orm_update_tables(db, provider, tables, version):
 
 
 def orm_load_database(pint_data, db_logfile=None):
-    db = init_db(outputfile=db_logfile)
+    db = init_db(outputfile=db_logfile, create_all=False)
 
     data_files = gen_data_files_list(pint_data_repo=pint_data)
 
@@ -328,14 +327,11 @@ def create_db_uri(host, port, user, password, database, ssl_mode, root_cert):
     return f'postgresql://{user}:{password}@{host}:{port}/{database}{ssl_param}'
 
 
-def get_version_or_create_control(db_uri, repository):
-    try:
-        return migrate_api.db_version(db_uri, repository)
-    except migrate_exceptions.DatabaseNotControlledError:
-        LOG.info(('Database not under version control. Putting it under '
-                  'version control.'))
-        migrate_api.version_control(db_uri, repository)
-        return migrate_api.db_version(db_uri, repository)
+def get_alembic_config(repository, db_uri):
+    alembic_cfg = Config()
+    alembic_cfg.set_main_option('script_location', repository)
+    alembic_cfg.set_main_option('sqlalchemy.url', db_uri)
+    return alembic_cfg
 
 
 @click.group(help='Pint database management utility')
@@ -372,9 +368,10 @@ def pint_db(ctx, debug, host, port, user, password, database,
 @click.command(help='Print database version')
 @click.pass_context
 def db_version(ctx):
-    print('Current version is %s.' % (
-        get_version_or_create_control(
-            ctx.obj['db_uri'], ctx.obj['repository'])))
+    print('Current Version')
+    print('===============')
+    command.current(get_alembic_config(
+        ctx.obj['repository'], ctx.obj['db_uri']))
 
 
 @click.command(help='Upgrade database schema')
@@ -385,12 +382,9 @@ def db_version(ctx):
 def upgrade(ctx, pint_data, db_logfile):
     try:
         LOG.info('Creating version control')
-        # first create the version control if it does not exist
-        get_version_or_create_control(ctx.obj['db_uri'], ctx.obj['repository'])
-
         LOG.info('Upgrading schema')
-        # upgrade schema
-        migrate_api.upgrade(ctx.obj['db_uri'], ctx.obj['repository'])
+        command.upgrade(get_alembic_config(
+            ctx.obj['repository'], ctx.obj['db_uri']), 'head')
 
         LOG.info('Updating data')
         # import data
