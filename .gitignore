@@ -12,5 +12,3 @@ dist/
 *.log
 AUTHORS
 ChangeLog
-alembic.ini
-
