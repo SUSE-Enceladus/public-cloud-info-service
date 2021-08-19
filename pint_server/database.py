@@ -154,7 +154,7 @@ def create_postgres_url_from_env():
 
 
 def init_db(dbconfig=None, outputfile=None, echo=None,
-            hide_parameters=None, create_all=False):
+            hide_parameters=None):
     # import all modules here that might define models so that
     # they will be registered properly on the metadata.  Otherwise
     # you will have to import them first before calling init_db()
@@ -207,7 +207,6 @@ def init_db(dbconfig=None, outputfile=None, echo=None,
                                              bind=engine))
     Base.query = db_session.query_property()
 
-    if create_all:
-        Base.metadata.create_all(bind=engine)
+    Base.metadata.create_all(bind=engine)
 
     return db_session
