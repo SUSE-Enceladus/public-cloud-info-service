@@ -1,7 +1,7 @@
 """Add IPv6 column
 
 Revision ID: 528cb85d6ad3
-Revises:
+Revises: 3a1b9b52bd78
 Create Date: 2021-07-30 19:05:31.695486
 
 """
@@ -11,7 +11,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = '528cb85d6ad3'
-down_revision = None
+down_revision = '3a1b9b52bd78'
 branch_labels = None
 depends_on = None
 
