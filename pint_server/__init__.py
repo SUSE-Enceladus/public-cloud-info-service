@@ -18,7 +18,9 @@
 # NOTE(gyee): must update the version here on a new release
 __VERSION__ = '2.0.3'
 
-from pint_server.database import init_db
+from pint_server.database import (
+    init_db, create_postgres_url_from_config
+)
 from pint_server.models import (AlibabaImagesModel, AmazonImagesModel,
                     AmazonServersModel, GoogleImagesModel,
                     GoogleServersModel, ImageState,
