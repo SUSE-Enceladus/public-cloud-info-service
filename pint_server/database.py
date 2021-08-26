@@ -71,7 +71,7 @@ def create_db_logger(outputfile):
 def _create_postgres_url(db_user, db_password, db_name, db_host,
                          db_port=5432, db_ssl_mode=None,
                          db_root_cert=None):
-    """Helper function to contruct the URL connection string
+    """Helper function to construct the URL connection string
 
     Args:
         db_user: (string): the username to connect to the Postgres
