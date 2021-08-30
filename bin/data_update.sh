@@ -18,9 +18,9 @@
 
 
 CurrentDir=$(dirname $(readlink -e $0))
-RepositoryDir=$(dirname $CurrentDir)/pint_server/pint_db_migrate
+ProjectRootDir=$(dirname $CurrentDir)
 
-export PYTHONPATH=$(dirname $CurrentDir):${PYTHONPATH:+:${PYTHONPATH}}
+export PYTHONPATH=${ProjectRootDir}:${PYTHONPATH:+:${PYTHONPATH}}
 
 if [[ "$VIRTUAL_ENV" == "" ]] ; then
   echo
@@ -29,5 +29,4 @@ if [[ "$VIRTUAL_ENV" == "" ]] ; then
   exit 1
 fi
 
-python3 $CurrentDir/pint_db.py --repository $RepositoryDir $@
-
+python3 ${ProjectRootDir}/pint_server/data_update.py $@

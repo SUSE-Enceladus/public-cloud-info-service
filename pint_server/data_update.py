@@ -15,19 +15,17 @@
 # To contact SUSE about this file by physical or electronic mail,
 # you may find current contact information at www.suse.com
 
-import argparse
 from datetime import datetime
-import glob
+from lxml import etree
+from urllib.parse import quote_plus
+import argparse
 import click
+import glob
 import logging
 import os
 import re
 import subprocess
 import sys
-
-from lxml import etree
-from migrate import exceptions as migrate_exceptions
-from migrate.versioning import api as migrate_api
 
 from pint_server.database import init_db
 from pint_server.models import (
@@ -284,7 +282,7 @@ def orm_update_tables(db, provider, tables, version):
 
 
 def orm_load_database(pint_data, db_logfile=None):
-    db = init_db(outputfile=db_logfile)
+    db = init_db(outputfile=db_logfile, create_all=False)
 
     data_files = gen_data_files_list(pint_data_repo=pint_data)
 
@@ -328,17 +326,7 @@ def create_db_uri(host, port, user, password, database, ssl_mode, root_cert):
     return f'postgresql://{user}:{password}@{host}:{port}/{database}{ssl_param}'
 
 
-def get_version_or_create_control(db_uri, repository):
-    try:
-        return migrate_api.db_version(db_uri, repository)
-    except migrate_exceptions.DatabaseNotControlledError:
-        LOG.info(('Database not under version control. Putting it under '
-                  'version control.'))
-        migrate_api.version_control(db_uri, repository)
-        return migrate_api.db_version(db_uri, repository)
-
-
-@click.group(help='Pint database management utility')
+@click.group(help='Pint database update utility')
 @click.option('-d', '--debug', help='Enable debugging', is_flag=True)
 @click.option('-h', '--host', help="Database host", required=True, type=str)
 @click.option('-p', '--port', help="Database port", default=5432, type=int)
@@ -349,11 +337,9 @@ def get_version_or_create_control(db_uri, repository):
 @click.option('-n', '--database', help='Database name', default='postgres')
 @click.option('--ssl-mode', help='Database SSL mode')
 @click.option('--root-cert', help='Database root CA certificate file')
-@click.option('--repository', help='Database migration project repository',
-              required=True, type=str)
 @click.pass_context
 def pint_db(ctx, debug, host, port, user, password, database,
-            ssl_mode, root_cert, repository):
+            ssl_mode, root_cert):
     if debug:
         logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
     else:
@@ -364,17 +350,7 @@ def pint_db(ctx, debug, host, port, user, password, database,
 
     ctx.obj['db_uri'] = create_db_uri(host, port, user, password, database,
                                       ssl_mode, root_cert)
-    ctx.obj['repository'] = repository
     LOG.debug('db_uri: %s' % (ctx.obj['db_uri']))
-    LOG.debug('repository: %s' % (ctx.obj['repository']))
-
-
-@click.command(help='Print database version')
-@click.pass_context
-def db_version(ctx):
-    print('Current version is %s.' % (
-        get_version_or_create_control(
-            ctx.obj['db_uri'], ctx.obj['repository'])))
 
 
 @click.command(help='Upgrade database schema')
@@ -382,27 +358,18 @@ def db_version(ctx):
 @click.option('--db-logfile', help='DB debug log file', default=None,
               required=False, type=str)
 @click.pass_context
-def upgrade(ctx, pint_data, db_logfile):
+def update(ctx, pint_data, db_logfile):
     try:
-        LOG.info('Creating version control')
-        # first create the version control if it does not exist
-        get_version_or_create_control(ctx.obj['db_uri'], ctx.obj['repository'])
-
-        LOG.info('Upgrading schema')
-        # upgrade schema
-        migrate_api.upgrade(ctx.obj['db_uri'], ctx.obj['repository'])
-
         LOG.info('Updating data')
         # import data
         os.environ['DATABASE_URI'] = ctx.obj['db_uri']
         orm_load_database(pint_data, db_logfile=db_logfile)
-        print('Pint database successfully upgraded.')
+        print('Pint database successfully updated.')
     except Exception as e:
         print('Failed to upgrade Pint database: %s' % (e))
 
 
-pint_db.add_command(db_version)
-pint_db.add_command(upgrade)
+pint_db.add_command(update)
 
 
 if __name__ == '__main__':
