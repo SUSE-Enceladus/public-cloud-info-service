@@ -77,6 +77,7 @@ class ProviderServerBase(PintBase):
     # column type accordingly.
     ip = Column(postgresql.INET, primary_key=True)
     region = Column(String(100), primary_key=True)
+    ipv6 = Column(postgresql.INET)
 
 
 class AmazonImagesModel(Base, ProviderImageBase):
