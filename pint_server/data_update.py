@@ -353,7 +353,7 @@ def pint_db(ctx, debug, host, port, user, password, database,
     LOG.debug('db_uri: %s' % (ctx.obj['db_uri']))
 
 
-@click.command(help='Upgrade database schema')
+@click.command(help='Update Pint data in the database.')
 @click.option('--pint-data', help='Path to pint-data dir', type=str)
 @click.option('--db-logfile', help='DB debug log file', default=None,
               required=False, type=str)
