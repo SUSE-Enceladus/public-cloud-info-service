@@ -71,7 +71,7 @@ def create_db_logger(outputfile):
 def _create_postgres_url(db_user, db_password, db_name, db_host,
                          db_port=5432, db_ssl_mode=None,
                          db_root_cert=None):
-    """Helper function to contruct the URL connection string
+    """Helper function to construct the URL connection string
 
     Args:
         db_user: (string): the username to connect to the Postgres
@@ -154,7 +154,7 @@ def create_postgres_url_from_env():
 
 
 def init_db(dbconfig=None, outputfile=None, echo=None,
-            hide_parameters=None):
+            hide_parameters=None, create_all=False):
     # import all modules here that might define models so that
     # they will be registered properly on the metadata.  Otherwise
     # you will have to import them first before calling init_db()
@@ -188,14 +188,26 @@ def init_db(dbconfig=None, outputfile=None, echo=None,
     else:
         engine_url = create_postgres_url_from_env()
 
-    engine = create_engine(engine_url, convert_unicode=True,
-                           echo=echo, hide_parameters=hide_parameters)
+    # TODO(rtamalin): Remove this try/except hackery once we move forward
+    # to being based on SLE 15 SP3 or later.
+    try:
+        engine = create_engine(engine_url, convert_unicode=True,
+                               echo=echo, hide_parameters=hide_parameters)
+    except TypeError as e:
+        # If we failed because of the hide_parameters argument then
+        # try again without it.
+        if 'hide_parameters' in str(e):
+            engine = create_engine(engine_url, convert_unicode=True,
+                                   echo=echo)
+        else:
+            raise
 
     db_session = scoped_session(sessionmaker(autocommit=False,
                                              autoflush=False,
                                              bind=engine))
     Base.query = db_session.query_property()
 
-    Base.metadata.create_all(bind=engine)
+    if create_all:
+        Base.metadata.create_all(bind=engine)
 
     return db_session

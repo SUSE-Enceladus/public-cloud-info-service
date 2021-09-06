@@ -1,3 +1,5 @@
+|CI-Workflow-Badge|
+
 ============
 Introduction
 ============
@@ -16,7 +18,8 @@ database with the up-to-date Pint Server schema and data.
 1. follow the instructions to install an instance of PostgreSQL from your
    favorite vendor
 2. clone the *pint-data* repo
-3. create the Python 3.6 development virtual environment
+3. OPTIONAL: create the Python 3.6 development virtual environment. Skip this
+   step if you are using an existing environment.
 
    .. code-block::
 
@@ -28,13 +31,32 @@ database with the up-to-date Pint Server schema and data.
 
      source dev_venv/bin/activate
 
-5. run the *./bin/pint_db_migrate.sh* CLI to perform scheme and data upgrade.
-   The script itself is idempotent so it won't fail if the schema and data
-   are already up-to-date.
+5. OPTIONAL: skip this step if you are using a brand new virtual environment.
+   Otherwise, keep the existing virtual environment up-to-date by running:
 
    .. code-block::
 
-     ./bin/pint_db_migrate.sh -h db_host -U db_user -W db_password -n db_name --ssl-mode required --root-cert /etc/ssl/postgresql_ca_cert.pem upgrade --pint-data /home/foo/pint-data
+     pip install -r requirements.txt
+
+6. run the *./bin/schema_upgrade.sh* CLI to perform scheme migration.
+   The script itself is idempotent so it won't fail if the schema is
+   already up-to-date.
+
+   .. code-block::
+
+     ./bin/schema_upgrade.sh -h db_host -U db_user -W db_password -n db_name --ssl-mode require --root-cert /etc/ssl/postgresql_ca_cert.pem upgrade
+
+   **NOTE**: in a development environment where TLS is not enabled for the
+   PostgreSQL instance, the *--ssl-mode* and *--root-cert* arguments are
+   not needed.
+
+7. run the *./bin/data_update.sh* CLI to perform data update.
+   The script itself is idempotent so it won't fail if the data is
+   already up-to-date.
+
+   .. code-block::
+
+     ./bin/data_update.sh -h db_host -U db_user -W db_password -n db_name --ssl-mode require --root-cert /etc/ssl/postgresql_ca_cert.pem update --pint-data /home/foo/pint-data
 
    **NOTE**: in the above example, */home/foo/pint-data* is where you clone the
    *pint-data* repo. In other words, the XML data files are expected to be
@@ -258,60 +280,76 @@ For example:
 How To Upgrade Schema
 =====================
 
+We are using Alembic framework to facility schema migration. For more details,
+see https://alembic.sqlalchemy.org/en/latest/tutorial.html.
+
 Here's an example of a normal workflow for performing schema update.
 
-1. create a new changeset file in *pint_server/pint_db_migrate/versions/*. The
-   new changeset file must have the following format: *<d><d><d>_<string>.py*.
-   The first three digit of the filename is the version number, follow by an
-   underscore and a meaningful name of the changeset. The new changeset must
-   have the highest version number, which is usually a plus one increment of
-   the last version. For example, if *pint_server/pint_db_migrate/versions/*
-   currently contains a file *001_in_the_beginning.py*. The next changeset
-   should starts with *002*. Say if we want to add a new column *foo* to the
-   *amazonimages* table. We should create a new file named *002_add_foo_column_to_amazonimages.py* with the following content:
-
-   .. code-block::
-
-     from sqlalchemy import Table, MetaData, String, Column
-
-     def upgrade(migrate_engine):
-         meta = MetaData(bind=migrate_engine)
-         amazonimages = Table('amazonimages', meta, autoload=True)
-         foo = Column('foo', String(100))
-         foo.create(amazonimages)
-
-     def downgrade(migrate_engine):
-         meta = MetaData(bind=migrate_engine)
-         amazonimages = Table('amazonimages', meta, autoload=True)
-         amazonimages.c.foo.drop()
-
-2. create the Python 3.6 development virtual environment
+1. create the Python 3.6 development virtual environment
 
    .. code-block::
 
      ./bin/create_dev_venv.sh
 
-3. activate the development virtual environment
+2. activate the development virtual environment
 
    .. code-block::
 
      source dev_venv/bin/activate
 
-4. run the *./bin/pint_db_migrate.sh* CLI to perform scheme and data upgrade.
-   The script itself is idempotent so it won't fail if the schema and data
-   are already up-to-date.
+3. update `pint_server/models.py` to reflect the latest changes
+
+4. copy `pint_server/alembic.ini.sample` to `pint_server/alembic.ini`
 
    .. code-block::
 
-     ./bin/pint_db_migrate.sh -h db_host -U db_user -W db_password -n db_name --ssl-mode require --root-cert /etc/ssl/postgresql_ca_cert.pem upgrade --pint-data /home/foo/pint-data
+     cp pint_server/alembic.ini.sample pint_server/alembic.ini
+
+5. uncomment and set the `sqlalchemy.url` property in
+   `pint_server/alembic.ini` to point to database to which to generate the
+   next version of the schema. Make sure the database scheme is up-to-date
+   prior to generate the next revision.
+
+   **NOTE**: if your database password contains a percent character (%), make
+   sure to escape it by replacing it with two percent characters (%%).
+
+6. auto generate the next revision. Note that Alembic will use the existing
+   database as the baseline to generate the next revision so make sure the
+   existing database is up-to-date. To auto generate the next revision:
+
+   .. code-block::
+
+   cd public-cloud-info-service/pint_server
+   alembic revision --autogenerate -m 'add some table'
+
+   If the above command is successful, you'll see the auto generate
+   revision file in `./pint_db_migrate/versions/`. The file is named
+   `<revision>_add_some_table.py`.
+
+7. *IMPORTANT:* the auto-generated migration script may not have everything
+   you need. Make sure to read the code carefully and make the necessary
+   changes in order to complete the code.
+
+8. run *./bin/schema_upgrade.sh* and *./bin/data_update.sh* to perform scheme
+   migration and data update respectively. The scripts themselves are
+   idempotent so it won't fail if the schema and data are already up-to-date.
+
+   .. code-block::
+
+     ./bin/schema_upgrade.sh -h db_host -U db_user -W db_password -n db_name --ssl-mode require --root-cert /etc/ssl/postgresql_ca_cert.pem upgrade
+     ./bin/data_update.sh -h db_host -U db_user -W db_password -n db_name --ssl-mode require --root-cert /etc/ssl/postgresql_ca_cert.pem update --pint-data /home/foo/pint-data
 
    **NOTE**: in the above example, */home/foo/pint-data* is where you clone the
    *pint-data* repo. In other words, the XML data files are expected to be
    located in the */home/foo/pint-data/data* directory.
 
-   **NOTE**: The --root-cert is path to the file with the RDS CA bundle which can be obtained from 
+   **NOTE**: The --root-cert is path to the file with the RDS CA bundle which can be obtained from
    https://s3.amazonaws.com/rds-downloads/rds-combined-ca-bundle.pem
 
    **NOTE**: in a development environment where TLS is not enabled for the
    PostgreSQL instance, the *--ssl-mode* and *--root-cert* arguments are
    not needed.
+
+.. |CI-Workflow-Badge| image:: https://github.com/SUSE-Enceladus/public-cloud-info-service/actions/workflows/ci-workflow.yml/badge.svg
+  :target: https://github.com/SUSE-Enceladus/public-cloud-info-service/actions/workflows/ci-workflow.yml
+  :alt: CI Workflow status - Github Actions

@@ -61,7 +61,7 @@ Testing Pint Server Lamba Function Container Locally
 How To Make A Release
 =====================
 
-1. update setup.cfg with the new version
+1. update pint_server/__init__.py '__VERSION__' attribute with the new version
 
 2. create a git annotated tag for the release version. For example:
 

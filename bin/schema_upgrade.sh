@@ -1,3 +1,4 @@
+#!/bin/bash
 # Copyright (c) 2021 SUSE LLC
 #
 # This program is free software; you can redistribute it and/or
@@ -15,15 +16,19 @@
 # To contact SUSE about this file by physical or electronic mail,
 # you may find current contact information at www.suse.com
 
-# NOTE(gyee): must update the version here on a new release
-__VERSION__ = '2.0.3'
 
-from pint_server.database import (
-    init_db, create_postgres_url_from_config
-)
-from pint_server.models import (AlibabaImagesModel, AmazonImagesModel,
-                    AmazonServersModel, GoogleImagesModel,
-                    GoogleServersModel, ImageState,
-                    MicrosoftImagesModel, MicrosoftRegionMapModel,
-                    MicrosoftServersModel, OracleImagesModel,
-                    ServerType, VersionsModel)
+CurrentDir=$(dirname $(readlink -e $0))
+ProjectRootDir=$(dirname $CurrentDir)
+RepositoryDir=${ProjectRootDir}/pint_server/pint_db_migrate
+
+export PYTHONPATH=${ProjectRootDir}:${PYTHONPATH:+:${PYTHONPATH}}
+
+if [[ "$VIRTUAL_ENV" == "" ]] ; then
+  echo
+  echo "ERROR: python virtualenv not detected. Please run $CurrentDir/create_dev_venv.sh to create and activate the python venv first."
+  echo
+  exit 1
+fi
+
+python3 ${ProjectRootDir}/pint_server/schema_upgrade.py --repository $RepositoryDir $@
+
