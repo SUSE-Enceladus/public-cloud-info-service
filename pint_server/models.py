@@ -69,9 +69,9 @@ class ProviderImageBase(PintBase):
 
 
 class ProviderServerBase(PintBase):
-    type = Column(Enum(ServerType, name=ServerType.__enum_name__))
+    type = Column(Enum(ServerType, name=ServerType.__enum_name__), nullable=False)
     shape = Column(String(10))
-    name = Column(String(100))
+    name = Column(String(100), nullable=False)
     # NOTE(gyee): the INET type is specific to PostgreSQL. If in the future
     # we decided to support other vendors, we'll need to update this
     # column type accordingly.
