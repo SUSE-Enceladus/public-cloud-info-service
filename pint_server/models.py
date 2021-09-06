@@ -16,7 +16,6 @@
 # you may find current contact information at www.suse.com
 
 import enum
-import uuid
 
 from sqlalchemy import (
     Column, Date, Enum, Numeric, String, Integer

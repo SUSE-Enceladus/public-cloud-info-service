@@ -1,4 +1,4 @@
-"""Trying Enums
+"""Add Servers ID
 
 Revision ID: b381843009e0
 Revises: 528cb85d6ad3
@@ -71,3 +71,4 @@ def downgrade():
     # manual commands
     for tablename in tablenames:
         op.create_primary_key('%s_pkey' % (tablename), tablename, ['ip', 'region'])
+        op.execute('drop sequence %s_id_seq' % (tablename))
