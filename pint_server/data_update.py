@@ -29,20 +29,28 @@ import sys
 
 from pint_server.database import init_db
 from pint_server.models import (
-            ImageState,
-            ServerType,
             AlibabaImagesModel,
             AmazonImagesModel,
             AmazonServersModel,
             GoogleImagesModel,
             GoogleServersModel,
+            ImageState,
             MicrosoftImagesModel,
             MicrosoftRegionMapModel,
             MicrosoftServersModel,
             OracleImagesModel,
+            ServerType,
             VersionsModel
         )
 
+class DataUpdateError(Exception):
+    pass
+
+class InvalidServerTypeErrror(DataUpdateError):
+    pass
+
+class MissingRequiredTablesErrror(DataUpdateError):
+    pass
 
 LOG = logging.getLogger(__name__)
 
@@ -166,6 +174,16 @@ def extract_data_from_file(data_file, data_store):
             table_name = table_type + "s"
             rows = extract_provider_data_rows(
                         root.findall(table_name)[0], table_type)
+
+            # verify all server table rows have a valid type
+            if table_type == 'server':
+                for row in rows:
+                    if not isinstance(row['type'], ServerType):
+                        raise InvalidServerTypeError(
+                            "Invalid ServerType: '%s' in "
+                            "servers data for '%s'" %
+                            (row['type'], provider))
+
             provider_tables[table_name] = rows
 
         if provider == 'microsoft':
@@ -194,11 +212,17 @@ def orm_update_table(db, provider, table_name, table_rows, version):
     rows_added = 0
     rows_updated = 0
     for row_data in table_rows:
-        primary_data = {k:v for k, v in row_data.items()
+        search_data = {k:v for k, v in row_data.items()
                             if getattr(model.__table__.columns,
                                        k).primary_key}
-        # if we find no match for the primary keys they add a new row
-        found_row = db.query(model).filter_by(**primary_data).one_or_none()
+
+        # If table is using a surrogate integer index as the primary key
+        # then just search for an exact match
+        if not search_data:
+            search_data = row_data
+
+        # if we find no match for the primary keys then add a new row
+        found_row = db.query(model).filter_by(**search_data).one_or_none()
         if not found_row:
             row = model(**row_data)
             LOG.debug("Adding new row %s", repr(row))
@@ -303,8 +327,9 @@ def orm_load_database(pint_data, db_logfile=None):
 
         for table_name in required_table_names:
             if table_name not in tables:
-                LOG.fatal("No %s table data for provider %s",
-                             repr(table_name), repr(provider))
+                raise MissingRequiredTablesErrror(
+                        "No %s table data for provider %s" %
+                        (repr(table_name), repr(provider)))
 
         orm_update_tables(db, provider, tables, version)
 

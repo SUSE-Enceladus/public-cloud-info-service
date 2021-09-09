@@ -30,10 +30,10 @@ if [[ "$VIRTUAL_ENV" == "" ]] ; then
   exit 1
 fi
 
-export POSTGRES_USER=snotty
-export POSTGRES_PASSWORD=MasterSlobs
-export POSTGRES_DB=postgres
-export POSTGRES_HOST=127.0.0.1
+export POSTGRES_USER=${POSTGRES_USER:-snotty}
+export POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-MasterSlobs}
+export POSTGRES_DB=${POSTGRES_DB:-postgres}
+export POSTGRES_HOST=${POSTGRES_HOST:-127.0.0.1}
 # NOTE(gyee): see https://www.postgresql.org/docs/11/libpq-connect.html#LIBPQ-CONNECT-SSLMODE
 #export POSTGRES_SSL_MODE=require
 #export POSTGRES_SSL_ROOT_CERTIFICATE=/var/task/rds-combined-ca-bundle.pem
