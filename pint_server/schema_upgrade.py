@@ -54,6 +54,9 @@ def get_alembic_config(repository, db_uri):
 
 @click.group(help='Pint database management utility')
 @click.option('-d', '--debug', help='Enable debugging', is_flag=True)
+@click.option('-q', '--quiet',
+              help='Minimises output unless --debug specified',
+              is_flag=True)
 @click.option('-h', '--host', help="Database host", required=True, type=str)
 @click.option('-p', '--port', help="Database port", default=5432, type=int)
 @click.option('-U', '--user', help="Database user", required=True, type=str)
@@ -66,11 +69,13 @@ def get_alembic_config(repository, db_uri):
 @click.option('--repository', help='Database migration project repository',
               required=True, type=str)
 @click.pass_context
-def pint_db(ctx, debug, host, port, user, password, database,
+def pint_db(ctx, debug, quiet, host, port, user, password, database,
             ssl_mode, root_cert, repository):
-    if debug:
+    if not any((debug, quiet)):
+        logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+    elif debug:
         logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
-    else:
+    elif quiet:
         logging.basicConfig(stream=sys.stdout, level=logging.WARNING)
     # ensure that ctx.obj exists and is a dict (in case `cli()` is called
     # by means other than the `if` block below)
@@ -102,6 +107,7 @@ def upgrade(ctx):
             ctx.obj['repository'], ctx.obj['db_uri']), 'head')
         print('Pint database schema migration successfully completed.')
     except Exception as e:
+        LOG.debug(e, exc_info=True)
         print('Failed to upgrade Pint database: %s' % (e))
 
 

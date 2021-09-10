@@ -328,6 +328,9 @@ def create_db_uri(host, port, user, password, database, ssl_mode, root_cert):
 
 @click.group(help='Pint database update utility')
 @click.option('-d', '--debug', help='Enable debugging', is_flag=True)
+@click.option('-q', '--quiet',
+              help='Minimises output unless --debug specified',
+              is_flag=True)
 @click.option('-h', '--host', help="Database host", required=True, type=str)
 @click.option('-p', '--port', help="Database port", default=5432, type=int)
 @click.option('-U', '--user', help="Database user", required=True, type=str)
@@ -338,11 +341,13 @@ def create_db_uri(host, port, user, password, database, ssl_mode, root_cert):
 @click.option('--ssl-mode', help='Database SSL mode')
 @click.option('--root-cert', help='Database root CA certificate file')
 @click.pass_context
-def pint_db(ctx, debug, host, port, user, password, database,
+def pint_db(ctx, debug, quiet, host, port, user, password, database,
             ssl_mode, root_cert):
-    if debug:
+    if not any((debug, quiet)):
+        logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+    elif debug:
         logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
-    else:
+    elif quiet:
         logging.basicConfig(stream=sys.stdout, level=logging.WARNING)
     # ensure that ctx.obj exists and is a dict (in case `cli()` is called
     # by means other than the `if` block below)
@@ -366,6 +371,7 @@ def update(ctx, pint_data, db_logfile):
         orm_load_database(pint_data, db_logfile=db_logfile)
         print('Pint database successfully updated.')
     except Exception as e:
+        LOG.debug(e, exc_info=True)
         print('Failed to upgrade Pint database: %s' % (e))
 
 

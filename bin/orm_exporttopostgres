@@ -265,7 +265,9 @@ def orm_load_database(args):
     os.environ['POSTGRES_USER'] = args.user
     os.environ['POSTGRES_PASSWORD'] = args.password
 
-    db = init_db()
+    # Pass create_all=True to enable this script to create the tables
+    # from schema if initialising an empty DB for first time.
+    db = init_db(create_all=True)
 
     data_files = gen_data_files_list()
 
