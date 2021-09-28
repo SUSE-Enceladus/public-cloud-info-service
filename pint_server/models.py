@@ -86,7 +86,7 @@ class ProviderServerBase(PintBase):
     def validate_name(self, key, value):
         if self.type == ServerType.update:
             if not value:
-                raise ValueError("%s.name cannot be null/empty for an update server." % self.tablename)
+                raise ValueError("%s.%s cannot be null/empty for an update server." % (self.tablename, key))
         return value
 
 
