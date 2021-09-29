@@ -13,4 +13,4 @@ dist/
 AUTHORS
 ChangeLog
 alembic.ini
-
+/.vscode

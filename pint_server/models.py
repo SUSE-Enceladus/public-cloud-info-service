@@ -17,9 +17,10 @@
 
 import enum
 
-from sqlalchemy import Column, Date, Enum, Numeric, String
+from sqlalchemy import Column, Date, Enum, Integer, Numeric, String
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects import postgresql
+from sqlalchemy.orm import validates
 
 
 Base = declarative_base()
@@ -59,59 +60,74 @@ class PintBase(object):
 
 
 class ProviderImageBase(PintBase):
-    name = Column(String(255), primary_key=True)
-    state = Column(Enum(ImageState, name=ImageState.__enum_name__))
+    state = Column(Enum(ImageState, name=ImageState.__enum_name__),
+                   nullable=False)
     replacementname = Column(String(255))
-    publishedon = Column(Date, primary_key=True)
+    publishedon = Column(Date, nullable=False)
     deprecatedon = Column(Date)
     deletedon = Column(Date)
     changeinfo = Column(String(255))
 
 
 class ProviderServerBase(PintBase):
-    type = Column(Enum(ServerType, name=ServerType.__enum_name__))
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    type = Column(Enum(ServerType, name=ServerType.__enum_name__),
+                  nullable=False)
     shape = Column(String(10))
     name = Column(String(100))
     # NOTE(gyee): the INET type is specific to PostgreSQL. If in the future
     # we decided to support other vendors, we'll need to update this
     # column type accordingly.
-    ip = Column(postgresql.INET, primary_key=True)
-    region = Column(String(100), primary_key=True)
+    ip = Column(postgresql.INET)
+    region = Column(String(100), nullable=False)
     ipv6 = Column(postgresql.INET)
+
+    @validates("name")
+    def validate_name(self, key, value):
+        if self.type == ServerType.update:
+            if not value:
+                raise ValueError("%s.%s cannot be null/empty for an update server." % (self.tablename, key))
+        return value
 
 
 class AmazonImagesModel(Base, ProviderImageBase):
     __tablename__ = 'amazonimages'
 
+    name = Column(String(255), nullable=False)
     id = Column(String(100), primary_key=True)
     replacementid = Column(String(100))
-    region = Column(String(100), primary_key=True)
+    region = Column(String(100), nullable=False)
 
 
 class AlibabaImagesModel(Base, ProviderImageBase):
     __tablename__ = 'alibabaimages'
 
+    name = Column(String(255), nullable=False)
     id = Column(String(100), primary_key=True)
     replacementid = Column(String(100))
-    region = Column(String(100))
+    region = Column(String(100), nullable=False)
 
 
 class GoogleImagesModel(Base, ProviderImageBase):
     __tablename__ = 'googleimages'
 
-    project = Column(String(50))
+    name = Column(String(255), primary_key=True)
+    project = Column(String(50), nullable=False)
 
 
 class MicrosoftImagesModel(Base, ProviderImageBase):
     __tablename__ = 'microsoftimages'
 
-    environment = Column(String(50), primary_key=True)
+    id = Column(Integer, primary_key=True)
+    name = Column(String(255), nullable=False)
+    environment = Column(String(50), nullable=False)
     urn = Column(String(100))
 
 
 class OracleImagesModel(Base, ProviderImageBase):
     __tablename__ = 'oracleimages'
 
+    name = Column(String(255), nullable=False)
     id = Column(String(100), primary_key=True)
     replacementid = Column(String(100))
 

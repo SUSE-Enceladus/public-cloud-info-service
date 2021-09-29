@@ -18,6 +18,7 @@
 # NOTE(gyee):
 # see https://flask.palletsprojects.com/en/1.1.x/patterns/sqlalchemy/
 
+import enum
 import logging
 import os
 
@@ -39,6 +40,7 @@ from pint_server.models import (
         ServerType,
         VersionsModel
     )
+
 
 def get_environ_or_bust(key_name):
     assert key_name in os.environ, 'Environment variable %s is required.' % (
