@@ -193,6 +193,13 @@ def extract_data_from_file(data_file, data_store):
 
         data_store[provider]['tables'] = provider_tables
 
+# Per-table overrides to used for existing entry checks
+IDENTITY_OVERRIDES = {
+    # The microsoftimages table now uses a sequence entry as the
+    # primary key, so use the values of these columns when checking
+    # for existing entries.
+    MicrosoftImagesModel.__name__: ['name', 'environment']
+}
 
 def orm_update_table(db, provider, table_name, table_rows, version):
     if table_name == "regionmap":
@@ -207,19 +214,38 @@ def orm_update_table(db, provider, table_name, table_rows, version):
                  repr(model.__name__), repr(provider),
                  repr(table_name))
 
+    # fields used to identify a matching existing entry
+    identity_fields = IDENTITY_OVERRIDES.get(model.__name__, [])
+    if identity_fields:
+        LOG.debug("For %s using %s instead of primary key fields for "
+                  "existing entry checking", repr(model.__name__),
+                  repr(identity_fields))
+
     LOG.debug("Attempting to add %d new entries for model %s",
                  len(table_rows), repr(model.__name__))
     rows_added = 0
     rows_updated = 0
     for row_data in table_rows:
-        search_data = {k:v for k, v in row_data.items()
-                            if getattr(model.__table__.columns,
-                                       k).primary_key}
+        # if identity_fields overrides have been specified use those
+        # fields to construct the search_data that will be used to
+        # check for existing matching entries, otherwise use the
+        # fields that are marked as primary keys.
+        if identity_fields:
+            search_data = {k:row_data[k] for k in identity_fields}
+        else:
+            search_data = {k:v for k, v in row_data.items()
+                               if getattr(model.__table__.columns,
+                                          k).primary_key}
 
-        # If table is using a surrogate integer index as the primary key
-        # then just search for an exact match
+        # if no search_data was identified, fall back on doing a whole
+        # row match search, to see if there is already an exact match
+        # present.
         if not search_data:
             search_data = row_data
+
+        LOG.debug("Checking for existing entries in %s using: %s",
+                  repr(model.__name__),
+                  repr(search_data))
 
         # if we find no match for the primary keys then add a new row
         found_row = db.query(model).filter_by(**search_data).one_or_none()
