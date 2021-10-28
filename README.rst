@@ -159,8 +159,8 @@ To run the serverless application via SAM CLI:
 Developing Unit Tests
 =====================
 
-Introduction
-------------
+Overview
+--------
 
 For the purpose of unit testing, we are using MagicMock to handle
 the DB layer and manipulate the return values.
@@ -349,6 +349,37 @@ Here's an example of a normal workflow for performing schema update.
    **NOTE**: in a development environment where TLS is not enabled for the
    PostgreSQL instance, the *--ssl-mode* and *--root-cert* arguments are
    not needed.
+
+Testing Schema Upgrades
+-----------------------
+
+Once you have developed a schema upgrade, to verify that it works correctly
+you will need to perform the following validation steps:
+
+1. Create a DB instance using the old schema, populated with representative
+   data, either real or synthesised.
+
+2. Pick a set of representative entries in any tables that are affected by
+   the schema migration and stash their contents for later comparison.
+   Similarly run some representative queries against the pint-server REST
+   API, and stash the results for later comparison.
+
+3. Perform the schema migration on the DB and validate that the migration
+   worked correctly, e.g.
+   * any new columns that were added have the expected values (if not null)
+   * deleted columns have been removed
+   * additional tables and associated resources (e.g. sequences or primary keys) have been added
+   * removed tables and associated resources (e.g. sequences or primary keys) are no longer present
+   * renamed tables and any associated resources (e.g. sequences or primary keys) have been renamed correctly
+   * primary key definitions have been updated/removed.
+
+4. Check that the contents of the representative rows in the relevant tables
+   have the equivalent contents, allowing for schema migration, to what was
+   there before the migration.  Similarly verify that the pint-server REST
+   API returns equivalent results for those queries whose results were saved.
+
+5. Test that new rows to the affected tables works as expect, thus verifying
+   that any validators are working correctly after the schema migration.
 
 .. |CI-Workflow-Badge| image:: https://github.com/SUSE-Enceladus/public-cloud-info-service/actions/workflows/ci-workflow.yml/badge.svg
   :target: https://github.com/SUSE-Enceladus/public-cloud-info-service/actions/workflows/ci-workflow.yml
