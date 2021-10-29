@@ -17,7 +17,7 @@
 
 import enum
 
-from sqlalchemy import Column, Date, Enum, Integer, Numeric, String
+from sqlalchemy import Column, Date, Enum, Integer, Numeric, String, UniqueConstraint
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.orm import validates
@@ -51,6 +51,12 @@ class PintBase(object):
     def tablename(self):
         """Return table name."""
         return self.__tablename__
+
+    @classmethod
+    def unique_constraints(cls):
+        """Return the table's unique constraint's column names, or empty list."""
+        return [u for u in cls.__table__.constraints
+                if isinstance(u, UniqueConstraint)]
 
     def __repr__(self):
         return "<%s(%s)>" % (self.__class__.__name__,
@@ -117,6 +123,7 @@ class GoogleImagesModel(Base, ProviderImageBase):
 
 class MicrosoftImagesModel(Base, ProviderImageBase):
     __tablename__ = 'microsoftimages'
+    __table_args__ = (UniqueConstraint('name', 'environment'),)
 
     id = Column(Integer, primary_key=True)
     name = Column(String(255), nullable=False)

@@ -195,10 +195,10 @@ def extract_data_from_file(data_file, data_store):
 
 # Per-table overrides to used for existing entry checks
 IDENTITY_OVERRIDES = {
-    # The microsoftimages table now uses a sequence entry as the
-    # primary key, so use the values of these columns when checking
-    # for existing entries.
-    MicrosoftImagesModel.__name__: ['name', 'environment']
+    # For the microsoftimages use the column names associated with the
+    # first unique constraint as the identity override column list.
+    MicrosoftImagesModel.__name__: [
+        c.name for c in MicrosoftImagesModel.unique_constraints()[0]]
 }
 
 def orm_update_table(db, provider, table_name, table_rows, version):
