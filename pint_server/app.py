@@ -82,6 +82,16 @@ PROVIDER_SERVERS_MODEL_MAP = {
     'microsoft': MicrosoftServersModel
 }
 
+PROVIDER_IMAGES_EXCLUDE_ATTRS = {
+    'microsoft': ['id']
+}
+
+PROVIDER_SERVERS_EXCLUDE_ATTRS = {
+    'amazon': ['id'],
+    'google': ['id'],
+    'microsoft': ['id']
+}
+
 SUPPORTED_CATEGORIES = ['images', 'servers']
 
 
@@ -183,7 +193,9 @@ def get_provider_servers_for_type(provider, server_type):
 
     servers = PROVIDER_SERVERS_MODEL_MAP[provider].query.filter(
         PROVIDER_SERVERS_MODEL_MAP[provider].type == mapped_server_type)
-    return [get_formatted_dict(server) for server in servers]
+    exclude_attrs = PROVIDER_SERVERS_EXCLUDE_ATTRS.get(provider)
+    return [get_formatted_dict(server, exclude_attrs=exclude_attrs)
+            for server in servers]
 
 
 def get_provider_servers_types(provider):
@@ -266,8 +278,9 @@ def _get_azure_servers(region, server_type=None):
             MicrosoftServersModel.region.in_(all_regions))
 
     try:
-        return [
-            get_formatted_dict(server) for server in servers]
+        exclude_attrs = PROVIDER_SERVERS_EXCLUDE_ATTRS.get('microsoft')
+        return [get_formatted_dict(server, exclude_attrs=exclude_attrs)
+                for server in servers]
     except DataError:
         abort(Response('', status=404))
 
@@ -294,9 +307,11 @@ def _get_azure_images_for_region_state(region, state):
             MicrosoftImagesModel.state == state)
 
     extra_attrs = {'region': region}
+    exclude_attrs = PROVIDER_IMAGES_EXCLUDE_ATTRS.get('microsoft')
     try:
-        return [get_formatted_dict(
-            image, extra_attrs=extra_attrs) for image in images]
+        return [get_formatted_dict(image, extra_attrs=extra_attrs,
+                                   exclude_attrs=exclude_attrs)
+                for image in images]
     except DataError:
         abort(Response('', status=404))
 
@@ -318,7 +333,9 @@ def get_provider_images_for_region_and_state(provider, region, state):
             images = PROVIDER_IMAGES_MODEL_MAP[provider].query.filter(
                 PROVIDER_IMAGES_MODEL_MAP[provider].state == state)
 
-        return [get_formatted_dict(image) for image in images]
+        exclude_attrs = PROVIDER_IMAGES_EXCLUDE_ATTRS.get(provider)
+        return [get_formatted_dict(image, exclude_attrs=exclude_attrs)
+                for image in images]
     else:
         abort(Response('', status=404))
 
@@ -329,7 +346,9 @@ def get_provider_images_for_state(provider, state):
             PROVIDER_IMAGES_MODEL_MAP[provider].state == state)
     else:
         abort(Response('', status=404))
-    return [get_formatted_dict(image) for image in images]
+    exclude_attrs = PROVIDER_IMAGES_EXCLUDE_ATTRS.get(provider)
+    return [get_formatted_dict(image, exclude_attrs=exclude_attrs)
+            for image in images]
 
 
 
@@ -348,7 +367,9 @@ def get_provider_servers_for_region(provider, region):
     else:
         abort(Response('', status=404))
 
-    return [get_formatted_dict(server) for server in servers]
+    exclude_attrs = PROVIDER_SERVERS_EXCLUDE_ATTRS.get(provider)
+    return [get_formatted_dict(server, exclude_attrs=exclude_attrs)
+            for server in servers]
 
 
 def get_provider_servers_for_region_and_type(provider, region, server_type):
@@ -370,7 +391,9 @@ def get_provider_servers_for_region_and_type(provider, region, server_type):
         servers = PROVIDER_SERVERS_MODEL_MAP[provider].query.filter(
             PROVIDER_SERVERS_MODEL_MAP[provider].region == region,
             PROVIDER_SERVERS_MODEL_MAP[provider].type == mapped_server_type)
-        return [get_formatted_dict(server) for server in servers]
+        exclude_attrs = PROVIDER_SERVERS_EXCLUDE_ATTRS.get(provider)
+        return [get_formatted_dict(server, exclude_attrs=exclude_attrs)
+                for server in servers]
     else:
         abort(Response('', status=404))
 
@@ -388,19 +411,25 @@ def get_provider_images_for_region(provider, region):
                 PROVIDER_IMAGES_MODEL_MAP[provider].region == region)
     else:
         abort(Response('', status=404))
-    return [get_formatted_dict(image) for image in images]
+    exclude_attrs = PROVIDER_IMAGES_EXCLUDE_ATTRS.get(provider)
+    return [get_formatted_dict(image, exclude_attrs=exclude_attrs)
+            for image in images]
 
 
 def get_provider_servers(provider):
     servers = []
     if PROVIDER_SERVERS_MODEL_MAP.get(provider) != None:
         servers = PROVIDER_SERVERS_MODEL_MAP[provider].query.all()
-    return [get_formatted_dict(server) for server in servers]
+    exclude_attrs = PROVIDER_SERVERS_EXCLUDE_ATTRS.get(provider)
+    return [get_formatted_dict(server, exclude_attrs=exclude_attrs)
+            for server in servers]
 
 
 def get_provider_images(provider):
     images = PROVIDER_IMAGES_MODEL_MAP[provider].query.all()
-    return [get_formatted_dict(image) for image in images]
+    exclude_attrs = PROVIDER_IMAGES_EXCLUDE_ATTRS.get(provider)
+    return [get_formatted_dict(image, exclude_attrs=exclude_attrs)
+            for image in images]
 
 
 def get_data_version_for_provider_category(provider, category):
