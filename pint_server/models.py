@@ -16,6 +16,7 @@
 # you may find current contact information at www.suse.com
 
 import enum
+import logging
 
 from sqlalchemy import Column, Date, Enum, Integer, Numeric, String, UniqueConstraint, Index
 from sqlalchemy.ext.declarative import declarative_base
@@ -23,8 +24,9 @@ from sqlalchemy.dialects import postgresql
 from sqlalchemy.orm import validates
 
 
+logger = logging.getLogger(__name__)
+
 Base = declarative_base()
-# from pint_server.database import Base
 
 
 class ImageState(enum.Enum):
@@ -106,6 +108,15 @@ class ProviderImageBase(PintBase):
                              'deprecatedon(%s) should not be after '
                              'deletedon(%s)' % (self.name,
                              str(deprecatedon), str(deletedon)))
+
+        return value
+
+
+    @validates("changeinfo")
+    def validate_changeinfo(self, key, value):
+        if value and not value.endswith('/'):
+            value = value + '/'
+            logger.info('%s.%s = %s (updated)', self.tablename, key, repr(value))
 
         return value
 
