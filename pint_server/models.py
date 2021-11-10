@@ -74,6 +74,32 @@ class ProviderImageBase(PintBase):
     deletedon = Column(Date)
     changeinfo = Column(String(255))
 
+    @validates('publishedon', 'deprecatedon', 'deletedon')
+    def validate_image_dates(self, key, value):
+        publishedon = value if key == 'publishedon' else self.publishedon
+        deprecatedon = value if key == 'deprecatedon' else self.deprecatedon
+        deletedon = value if key == 'deletedon' else self.deletedon
+
+        if deprecatedon and deprecatedon < publishedon:
+            raise ValueError('Image %s invalid dates specified - '
+                             'publishedon(%s) should not be after '
+                             'deprecatedon(%s)' % (self.name,
+                             str(publishedon), str(deprecatedon)))
+
+        if deletedon and deletedon < publishedon:
+            raise ValueError('Image %s invalid dates specified - '
+                             'publishedon(%s) should not be after '
+                             'deletedon(%s)' % (self.name,
+                             str(publishedon), str(deletedon)))
+
+        if deprecatedon and deletedon and deletedon < deprecatedon:
+            raise ValueError('Image %s invalid dates specified - '
+                             'deprecatedon(%s) should not be after '
+                             'deletedon(%s)' % (self.name,
+                             str(deprecatedon), str(deletedon)))
+
+        return value
+
 
 class ProviderServerBase(PintBase):
     id = Column(Integer, primary_key=True, autoincrement=True)
