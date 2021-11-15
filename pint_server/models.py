@@ -17,7 +17,7 @@
 
 import enum
 
-from sqlalchemy import Column, Date, Enum, Integer, Numeric, String, UniqueConstraint
+from sqlalchemy import Column, Date, Enum, Integer, Numeric, String, UniqueConstraint, Index
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.orm import validates
@@ -116,12 +116,6 @@ class ProviderServerBase(PintBase):
                   nullable=False)
     shape = Column(String(10))
     name = Column(String(100))
-    # NOTE(gyee): the INET type is specific to PostgreSQL. If in the future
-    # we decided to support other vendors, we'll need to update this
-    # column type accordingly.
-    ip = Column(postgresql.INET)
-    region = Column(String(100), nullable=False)
-    ipv6 = Column(postgresql.INET)
 
     @validates("name")
     def validate_name(self, key, value):
@@ -177,13 +171,49 @@ class OracleImagesModel(Base, ProviderImageBase):
 class AmazonServersModel(Base, ProviderServerBase):
     __tablename__ = 'amazonservers'
 
+    # NOTE(gyee): the INET type is specific to PostgreSQL. If in the future
+    # we decided to support other vendors, we'll need to update this
+    # column type accordingly.
+    ip = Column(postgresql.INET)
+    region = Column(String(100), nullable=False)
+    ipv6 = Column(postgresql.INET)
+
+    __table_args__ = (
+        Index('uix_amazonservers_ip_not_null', 'ip', unique=True, postgresql_where=ip.isnot(None)),
+        Index('uix_amazonservers_ipv6_not_null', 'ipv6', unique=True, postgresql_where=ipv6.isnot(None)),
+    )
+
 
 class GoogleServersModel(Base, ProviderServerBase):
     __tablename__ = 'googleservers'
 
+    # NOTE(gyee): the INET type is specific to PostgreSQL. If in the future
+    # we decided to support other vendors, we'll need to update this
+    # column type accordingly.
+    ip = Column(postgresql.INET)
+    region = Column(String(100), nullable=False)
+    ipv6 = Column(postgresql.INET)
+
+    __table_args__ = (
+        Index('uix_googleservers_ip_not_null', 'ip', unique=True, postgresql_where=ip.isnot(None)),
+        Index('uix_googleservers_ipv6_not_null', 'ipv6', unique=True, postgresql_where=ipv6.isnot(None)),
+    )
+
 
 class MicrosoftServersModel(Base, ProviderServerBase):
     __tablename__ = 'microsoftservers'
+
+    # NOTE(gyee): the INET type is specific to PostgreSQL. If in the future
+    # we decided to support other vendors, we'll need to update this
+    # column type accordingly.
+    ip = Column(postgresql.INET)
+    region = Column(String(100), nullable=False)
+    ipv6 = Column(postgresql.INET)
+
+    __table_args__ = (
+        Index('uix_microsoftservers_region_ip_not_null', 'region', 'ip', unique=True, postgresql_where=ip.isnot(None)),
+        Index('uix_microsoftservers_region_ipv6_not_null', 'region', 'ipv6', unique=True, postgresql_where=ipv6.isnot(None)),
+    )
 
 
 class MicrosoftRegionMapModel(Base, PintBase):
