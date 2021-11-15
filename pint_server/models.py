@@ -80,17 +80,26 @@ class ProviderImageBase(PintBase):
         deprecatedon = value if key == 'deprecatedon' else self.deprecatedon
         deletedon = value if key == 'deletedon' else self.deletedon
 
-        if deprecatedon and deprecatedon < publishedon:
-            raise ValueError('Image %s invalid dates specified - '
-                             'publishedon(%s) should not be after '
-                             'deprecatedon(%s)' % (self.name,
-                             str(publishedon), str(deprecatedon)))
+        # If called for deprecatedon or deletedon before publishedon
+        # has been set we have nothing to compare against, so just
+        # fall through and accept the provided value for now.
+        # Since the validator will be triggered for all 3 fields and
+        # performs the same checks each time, even if publishedon is
+        # the last field we are called for, the validator will still
+        # fail if either deprecatedon or deletedon is not valid with
+        # respect to that publishedon value.
+        if publishedon:
+            if deprecatedon and deprecatedon < publishedon:
+                raise ValueError('Image %s invalid dates specified - '
+                                 'publishedon(%s) should not be after '
+                                 'deprecatedon(%s)' % (self.name,
+                                 str(publishedon), str(deprecatedon)))
 
-        if deletedon and deletedon < publishedon:
-            raise ValueError('Image %s invalid dates specified - '
-                             'publishedon(%s) should not be after '
-                             'deletedon(%s)' % (self.name,
-                             str(publishedon), str(deletedon)))
+            if deletedon and deletedon < publishedon:
+                raise ValueError('Image %s invalid dates specified - '
+                                 'publishedon(%s) should not be after '
+                                 'deletedon(%s)' % (self.name,
+                                 str(publishedon), str(deletedon)))
 
         if deprecatedon and deletedon and deletedon < deprecatedon:
             raise ValueError('Image %s invalid dates specified - '

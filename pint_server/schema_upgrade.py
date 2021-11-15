@@ -109,6 +109,7 @@ def upgrade(ctx):
     except Exception as e:
         LOG.debug(e, exc_info=True)
         print('Failed to upgrade Pint database: %s' % (e))
+        exit(1)
 
 
 pint_db.add_command(db_version)
