@@ -101,8 +101,8 @@ def duplicate_servers():
         _commit_db_changes(db, f'duplicate_servers ({table_name} add v4 '
                            'and v6 only entries)')
 
-        # Microsoft can have the same server in multiple regions so add
-        # an entry in another region with both addresses
+        # Microsoft can have the same update server in multiple regions so add
+        # an update server entry in another region with both addresses
         if table_name == 'microsoftservers':
             LOG.debug('%s: Add other region entry', table_name)
             row = model(**server_entry_args['v4_v6_eu'])
