@@ -1,0 +1,239 @@
+#!/usr/bin/env python3
+# Copyright (c) 2021 SUSE LLC
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of version 3 of the GNU General Public License as
+# published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.   See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, contact SUSE LLC.
+#
+# To contact SUSE about this file by physical or electronic mail,
+# you may find current contact information at www.suse.com
+
+import click
+import logging
+import os
+import re
+import subprocess
+import sys
+
+from pint_server.database import init_db
+from pint_server.models import (
+            AlibabaImagesModel,
+            AmazonImagesModel,
+            AmazonServersModel,
+            GoogleImagesModel,
+            GoogleServersModel,
+            ImageState,
+            MicrosoftImagesModel,
+            MicrosoftRegionMapModel,
+            MicrosoftServersModel,
+            OracleImagesModel,
+            ServerType,
+            VersionsModel
+        )
+
+LOG = logging.getLogger(__name__)
+
+pass_fail = {
+    True: 'Passed',
+    False: 'FAILED!'
+}
+
+def _commit_db_changes(db, msg):
+
+    if db.new or db.dirty or db.deleted:
+        LOG.debug('Flushing DB changes for %s:', msg)
+        LOG.debug('  Added:   %-10d', len(db.new))
+        LOG.debug('  Updated: %-10d', len(db.dirty))
+        LOG.debug('  Deleted: %-10d', len(db.deleted))
+        db.commit()
+        LOG.debug('Flushed DB changes for %s:', msg)
+
+def duplicate_servers():
+
+    db = init_db()
+
+    # Addresses
+    ipv4 = '10.1.2.3'
+    ipv6 = 'fd12:3456:789a:1::1'
+
+    # Construct a set of argument lists that that can be used when adding
+    # server entries to the table for testing.
+    server_entry_args = {
+        'v4_only_us': dict(type=ServerType.update, name='test',
+                           ip=ipv4, region='us'),
+        'v6_only_us': dict(type=ServerType.update, name='test',
+                           ipv6=ipv6, region='us'),
+        'v4_v6_us': dict(type=ServerType.update, name='test',
+                         ip=ipv4, ipv6=ipv6, region='us'),
+        'v4_v6_eu': dict(type=ServerType.update, name='test',
+                         ip=ipv4, ipv6=ipv6, region='eu')
+    }
+
+    # Track testing status
+    test_results = {}
+
+    for model in [AmazonServersModel, GoogleServersModel,
+                  MicrosoftServersModel]:
+        table_name = model.__tablename__
+
+        # Assume the test passes
+        test_results[table_name] = True
+
+        LOG.info('%s: Testing duplicate server entries detection',
+                 table_name)
+
+        cleanup_entries = []
+
+        LOG.debug('%s: Add initial v4 and v6 only entries', table_name)
+        for entry in ['v4_only_us', 'v6_only_us']:
+            row = model(**server_entry_args[entry])
+            db.add(row)
+            cleanup_entries.append(row)
+
+        _commit_db_changes(db, f'duplicate_servers ({table_name} add v4 '
+                           'and v6 only entries)')
+
+        # Microsoft can have the same update server in multiple regions so add
+        # an update server entry in another region with both addresses
+        if table_name == 'microsoftservers':
+            LOG.debug('%s: Add other region entry', table_name)
+            row = model(**server_entry_args['v4_v6_eu'])
+            db.add(row)
+
+            try:
+                _commit_db_changes(db, f'duplicate_servers ({table_name} '
+                                   'add v4 and v6 other region entry)')
+                cleanup_entries.append(row)
+
+            except Exception as e:
+                LOG.debug(e, exc_info=True)
+                LOG.error("%s: We should be able to add a duplicate "
+                        "server entry in a different region!", table_name)
+                test_results[table_name] = False
+                db.rollback()
+
+        LOG.debug('%s: Add invalid entry', table_name)
+        row = model(**server_entry_args['v4_v6_us'])
+        db.add(row)
+
+        try:
+            _commit_db_changes(db, f'duplicate_servers ({table_name} add '
+                               'invalid entry)')
+
+            # If we get here the test failed
+            test_results[table_name] = False
+            LOG.error("%s: We shouldn't have been able to add a duplicate "
+                      "server entry!", table_name)
+
+            cleanup_entries.append(row)
+
+        except Exception as e:
+            LOG.debug(e, exc_info=True)
+            LOG.debug('%s: Caught expected exception!', table_name)
+            db.rollback()
+
+
+        LOG.debug('%s: Cleaning up the test entries.', table_name)
+        for row in cleanup_entries:
+            db.delete(row)
+
+        _commit_db_changes(db, f'duplicate_servers ({table_name} cleanup)')
+
+
+    LOG.info('Duplicate Servers test results:')
+    for key, result in test_results.items():
+        LOG.info('  %s: %s', key, pass_fail[result])
+
+    return all(v for k, v in test_results.items())
+
+
+@click.group(help='Pint DB adhoc commands')
+@click.option('-d', '--debug', help='Enable debugging', is_flag=True)
+@click.option('-q', '--quiet',
+              help='Minimises output unless --debug specified',
+              is_flag=True)
+@click.option('-h', '--host', help="Database host", required=True, type=str)
+@click.option('-p', '--port', help="Database port", default=5432, type=int)
+@click.option('-U', '--user', help="Database user", required=True, type=str)
+@click.option('-W', '--password', help='Database password', required=True,
+              hide_input=True, confirmation_prompt=True,
+              prompt='Database Password')
+@click.option('-n', '--database', help='Database name', default='postgres')
+@click.option('--ssl-mode', help='Database SSL mode')
+@click.option('--root-cert', help='Database root CA certificate file')
+@click.pass_context
+def pint_db(ctx, debug, quiet, host, port, user, password, database,
+            ssl_mode, root_cert):
+
+    if not any((debug, quiet)):
+        logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+    elif debug:
+        logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+    elif quiet:
+        logging.basicConfig(stream=sys.stdout, level=logging.WARNING)
+
+    # ensure that ctx.obj exists and is a dict (in case `cli()` is called
+    # by means other than the `if` block below)
+    ctx.ensure_object(dict)
+
+    os.environ['POSTGRES_DB'] = database
+    os.environ['POSTGRES_HOST'] = host
+    os.environ['POSTGRES_PORT'] = str(port)
+    os.environ['POSTGRES_USER'] = user
+    os.environ['POSTGRES_PASSWORD'] = password
+    if ssl_mode:
+        os.environ['POSTGRES_SSL_MODE'] = ssl_mode
+    if root_cert:
+        os.environ['POSTGRES_SSL_ROOT_CERTIFICATE'] = root_cert
+
+
+@click.command(help='Run Pint DB adhoc tests.')
+@click.option('--tests', help='Comma separated list of specific tests to run',
+              required=False, type=str)
+@click.pass_context
+def test(ctx, tests):
+    LOG.info('Running adhoc tests')
+
+    known_tests = {
+        "duplicate_servers": duplicate_servers
+    }
+
+    if tests:
+        test_list = [t.strip() for t in tests.split()]
+        unknown_tests = set(known_tests.keys()).difference(set(test_list))
+        if unknown_tests:
+            LOG.error("Invalid tests: %s", ", ".join(list(unknown_tests)))
+            exit(1)
+    else:
+        test_list = known_tests.keys()
+
+    exit_status = 0
+    for test in test_list:
+        LOG.info('Running test %s...', repr(test))
+        result = known_tests[test]()
+        if result:
+            LOG.info('Adhoc test %s passed.', repr(test))
+        else:
+            exit_status = 1
+
+    if not exit_status:
+        print('SUCCESS: The adhoc tests passed!')
+    else:
+        print('ERROR: The adhoc tests failed!')
+
+    exit(exit_status)
+
+
+pint_db.add_command(test)
+
+
+if __name__ == '__main__':
+    pint_db()

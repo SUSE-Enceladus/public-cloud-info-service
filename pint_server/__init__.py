@@ -16,7 +16,7 @@
 # you may find current contact information at www.suse.com
 
 # NOTE(gyee): must update the version here on a new release
-__VERSION__ = '2.0.7'
+__VERSION__ = '2.0.8'
 
 from pint_server.database import (
     init_db, create_postgres_url_from_config

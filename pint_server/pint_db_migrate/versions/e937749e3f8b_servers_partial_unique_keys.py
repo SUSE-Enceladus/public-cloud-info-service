@@ -1,30 +1,24 @@
-"""microsoftimages unique constraint
+"""servers partial unique keys
 
-Revision ID: 8c5fc3cd9b18
-Revises: e2bdb3a5b1b4
-Create Date: 2021-10-29 09:10:26.515096
+Revision ID: e937749e3f8b
+Revises: 14ae3b1b5e81
+Create Date: 2021-11-16 06:24:00.605747
 
 """
-import os
 import logging
+import os
 
 from alembic import op
 import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '8c5fc3cd9b18'
-down_revision = 'e2bdb3a5b1b4'
+revision = 'e937749e3f8b'
+down_revision = '14ae3b1b5e81'
 branch_labels = None
 depends_on = None
 
 logger = logging.getLogger(os.path.basename(__file__))
-
-#
-# Unique constraint definition settings
-#
-uc_table = 'microsoftimages'
-uc_fields = ['name', 'environment']
 
 #
 # Helper Methods
@@ -77,18 +71,29 @@ def report_duplicates(table, fields, _log=logger.warning):
 
 
 #
-# Mainline migration entry points
+# Define appropriate per table unique entry checks for ip and ipv6 addresses
 #
-def upgrade():
-    # Check for and report any duplicates found for the fields in the
-    # proposed unique constraint
-    report_duplicates(uc_table, uc_fields)
+unique_server_addresses_checks = [
+    ["amazonservers", ['ip']],
+    ["amazonservers", ['ipv6']],
+    ["googleservers", ['ip']],
+    ["googleservers", ['ipv6']],
+    ["microsoftservers", ['ip', 'region']],
+    ["microsoftservers", ['ipv6', 'region']],
+]
 
-    # Add a new unique constraint to the 'microsoftimages' table based
-    # upon the name and environment columns.
-    op.create_unique_constraint(None, uc_table, uc_fields)
+def upgrade():
+
+    # Check for and warn about any duplicates that may exist in the servers tables
+    for table, fields in unique_server_addresses_checks:
+        report_duplicates(table, fields)
+
+    # Add the unique indices; will fail if duplicates exist
+    for table, fields in unique_server_addresses_checks:
+        op.create_index(f'uix_{table}_{fields[0]}_not_null', table, fields, unique=True, postgresql_where=sa.text(f'{fields[0]} IS NOT NULL'))
 
 
 def downgrade():
-    # remove the added unique constraint.
-    op.drop_constraint(None, uc_table, type_='unique')
+    # Drop the unique indices
+    for table, fields in reversed(unique_server_addresses_checks):
+        op.drop_index(f'uix_{table}_{fields[0]}_not_null', table_name=table, postgresql_where=sa.text(f'{fields[0]} IS NOT NULL'))
