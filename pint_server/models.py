@@ -179,8 +179,8 @@ class AmazonServersModel(Base, ProviderServerBase):
     ipv6 = Column(postgresql.INET)
 
     __table_args__ = (
-        Index('uix_amazonservers_ip_not_null', 'ip', unique=True, postgresql_where=ip.isnot(None)),
-        Index('uix_amazonservers_ipv6_not_null', 'ipv6', unique=True, postgresql_where=ipv6.isnot(None)),
+        Index('uix_amazonservers_region_ip_not_null', 'region', 'ip', unique=True, postgresql_where=ip.isnot(None)),
+        Index('uix_amazonservers_region_ipv6_not_null', 'region', 'ipv6', unique=True, postgresql_where=ipv6.isnot(None)),
     )
 
 
@@ -195,8 +195,8 @@ class GoogleServersModel(Base, ProviderServerBase):
     ipv6 = Column(postgresql.INET)
 
     __table_args__ = (
-        Index('uix_googleservers_ip_not_null', 'ip', unique=True, postgresql_where=ip.isnot(None)),
-        Index('uix_googleservers_ipv6_not_null', 'ipv6', unique=True, postgresql_where=ipv6.isnot(None)),
+        Index('uix_googleservers_region_ip_not_null', 'region', 'ip', unique=True, postgresql_where=ip.isnot(None)),
+        Index('uix_googleservers_region_ipv6_not_null', 'region', 'ipv6', unique=True, postgresql_where=ipv6.isnot(None)),
     )
 
 
