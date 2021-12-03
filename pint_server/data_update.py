@@ -115,6 +115,11 @@ def extract_provider_data_rows(parent_node, child_name):
                 attr_value = getattr(ImageState, value)
             elif attr in ['deletedon', 'deprecatedon', 'publishedon']:
                 attr_value = datetime.strptime(value, "%Y%m%d").date()
+            elif attr == 'changeinfo':
+                if value and not value.endswith('/'):
+                    attr_value = value + '/'
+                else:
+                    attr_value = value
             else:
                 attr_value = value
             row[attr] = attr_value
