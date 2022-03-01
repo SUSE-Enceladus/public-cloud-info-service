@@ -140,6 +140,7 @@ class AmazonImagesModel(Base, ProviderImageBase):
     __tablename__ = 'amazonimages'
 
     name = Column(String(255), nullable=False)
+    cspname = Column(String(128), nullable=True)
     id = Column(String(100), primary_key=True)
     replacementid = Column(String(100))
     region = Column(String(100), nullable=False)
