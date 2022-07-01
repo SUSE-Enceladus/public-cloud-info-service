@@ -1,0 +1,160 @@
+#!/usr/bin/env python3
+# Copyright (c) 2021 SUSE LLC
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of version 3 of the GNU General Public License as
+# published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.   See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, contact SUSE LLC.
+#
+# To contact SUSE about this file by physical or electronic mail,
+# you may find current contact information at www.suse.com
+
+import click
+import logging
+import os
+import re
+import subprocess
+import sys
+
+from pint_server.database import init_db
+from pint_server.models import (
+            AlibabaImagesModel,
+            AmazonImagesModel,
+            AmazonServersModel,
+            GoogleImagesModel,
+            GoogleServersModel,
+            ImageState,
+            MicrosoftImagesModel,
+            MicrosoftRegionMapModel,
+            MicrosoftServersModel,
+            OracleImagesModel,
+            ServerType,
+            VersionsModel
+        )
+
+LOG = logging.getLogger(__name__)
+
+def commit_db_changes(db, msg, dryrun):
+
+    if db.new or db.dirty or db.deleted:
+        if dryrun:
+            LOG.debug('Proposed DB changes for %s:', msg)
+            for r in db.new:
+                LOG.debug("+++: %s", repr(r))
+            for r in db.dirty:
+                LOG.debug("***: %s", repr(r))
+            for r in db.deleted:
+                LOG.debug("---: %s", repr(r))
+        LOG.debug('Flushing DB changes for %s:', msg)
+        LOG.debug('  Added:   %-10d', len(db.new))
+        LOG.debug('  Updated: %-10d', len(db.dirty))
+        LOG.debug('  Deleted: %-10d', len(db.deleted))
+        if not dryrun:
+            db.commit()
+            LOG.debug('Flushed DB changes for %s:', msg)
+
+
+def fix_15sp4_changeinfo(dryrun):
+
+    images_tables = [
+        AlibabaImagesModel,
+        AmazonImagesModel,
+        GoogleImagesModel,
+        MicrosoftImagesModel,
+        OracleImagesModel,
+    ]
+
+    db = init_db()
+
+    for table in images_tables:
+        table_name = table.__tablename__
+
+        for row in table.query.filter(table.name.contains('15-sp4')):
+            if '15-sp4' in row.name:
+                if row.changeinfo:
+                    row.changeinfo = ''
+
+    commit_db_changes(db, f'fix_15sp4_changeinfo ({table_name})', dryrun)
+
+
+@click.group(help='Pint DB adhoc commands')
+@click.option('-d', '--debug', help='Enable debugging', is_flag=True)
+@click.option('-q', '--quiet',
+              help='Minimises output unless --debug specified',
+              is_flag=True)
+@click.option('-h', '--host', help="Database host", required=True, type=str)
+@click.option('-p', '--port', help="Database port", default=5432, type=int)
+@click.option('-U', '--user', help="Database user", required=True, type=str)
+@click.option('-W', '--password', help='Database password', required=True,
+              hide_input=True, confirmation_prompt=True,
+              prompt='Database Password')
+@click.option('-n', '--database', help='Database name', default='postgres')
+@click.option('--ssl-mode', help='Database SSL mode')
+@click.option('--root-cert', help='Database root CA certificate file')
+@click.pass_context
+def pint_db(ctx, debug, quiet, host, port, user, password, database,
+            ssl_mode, root_cert):
+
+    if not any((debug, quiet)):
+        logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+    elif debug:
+        logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+    elif quiet:
+        logging.basicConfig(stream=sys.stdout, level=logging.WARNING)
+
+    # ensure that ctx.obj exists and is a dict (in case `cli()` is called
+    # by means other than the `if` block below)
+    ctx.ensure_object(dict)
+
+    os.environ['POSTGRES_DB'] = database
+    os.environ['POSTGRES_HOST'] = host
+    os.environ['POSTGRES_PORT'] = str(port)
+    os.environ['POSTGRES_USER'] = user
+    os.environ['POSTGRES_PASSWORD'] = password
+    if ssl_mode:
+        os.environ['POSTGRES_SSL_MODE'] = ssl_mode
+    if root_cert:
+        os.environ['POSTGRES_SSL_ROOT_CERTIFICATE'] = root_cert
+
+
+@click.command(help='Run Pint DB adhoc fixes.')
+@click.option('--dryrun', help='Show summary without applying changes',
+              is_flag=True)
+@click.option('--fixes', help='Comma separated list of fixes to run',
+              required=False, type=str)
+@click.pass_context
+def fix(ctx, dryrun, fixes):
+    LOG.info('Running adhoc fixes')
+
+    known_fixes = {
+        "fix_15sp4_changeinfo": fix_15sp4_changeinfo
+    }
+
+    if fixes:
+        fix_list = [t.strip() for f in fixes.split()]
+        unknown_fixes = set(known_fixes.keys()).difference(set(fix_list))
+        if unknown_fixes:
+            LOG.error("Invalid fixes: %s", ", ".join(list(unknown_fixes)))
+            exit(1)
+    else:
+        fix_list = known_fixes.keys()
+
+    exit_status = 0
+    for f in fix_list:
+        LOG.info('Running fix %s...', repr(fix))
+        known_fixes[f](dryrun)
+        LOG.info('Adhoc fix %s completed.', repr(fix))
+
+
+pint_db.add_command(fix)
+
+
+if __name__ == '__main__':
+    pint_db()
