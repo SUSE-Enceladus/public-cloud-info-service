@@ -19,8 +19,6 @@
 import click
 import logging
 import os
-import re
-import subprocess
 import sys
 
 from pint_server.database import init_db
@@ -83,6 +81,26 @@ def fix_15sp4_changeinfo(dryrun):
 
     commit_db_changes(db, f'fix_15sp4_changeinfo ({table_name})', dryrun)
 
+def fix_leap153_ec2_state(dryrun):
+    """
+    Fixes the state of the last Leap 15.3 image from "deleted" to
+    "deprecated". The fix is necessary as the transion in AWS MP has changed
+    and we cannot hide an image via the API. Affected images:
+    - openSUSE-Leap-15-3-v20220325-hvm-ssd-arm64
+    - openSUSE-Leap-15-3-v20220325-hvm-ssd-x86_64
+    """
+    table = AmazonImagesModel
+
+    db = init_db()
+
+    for row in table.query.filter(table.name.contains(
+            'openSUSE-Leap-15-3-v20220325')):
+        if row.state == ImageState.deleted:
+            row.state = ImageState.deprecated
+
+    commit_db_changes(db, 'fix_leap153_ec2_state', dryrun)
+
+
 
 @click.group(help='Pint DB adhoc commands')
 @click.option('-d', '--debug', help='Enable debugging', is_flag=True)
@@ -134,19 +152,22 @@ def fix(ctx, dryrun, fixes):
     LOG.info('Running adhoc fixes')
 
     known_fixes = {
-        "fix_15sp4_changeinfo": fix_15sp4_changeinfo
+        "fix_15sp4_changeinfo": fix_15sp4_changeinfo,
+        "fix_leap153_ec2_state": fix_leap153_ec2_state
     }
 
     if fixes:
         fix_list = [t.strip() for f in fixes.split()]
-        unknown_fixes = set(known_fixes.keys()).difference(set(fix_list))
+        unknown_fixes = set(fix_list).difference(known_fixes.keys())
         if unknown_fixes:
             LOG.error("Invalid fixes: %s", ", ".join(list(unknown_fixes)))
             exit(1)
     else:
-        fix_list = known_fixes.keys()
+        LOG.error(
+            "No fixes specified, available fixes: %s" % ", ".join(
+                known_fixes.keys())
+        )
 
-    exit_status = 0
     for f in fix_list:
         LOG.info('Running fix %s...', repr(fix))
         known_fixes[f](dryrun)
