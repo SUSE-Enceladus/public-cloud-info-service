@@ -195,6 +195,13 @@ def test_get_provider_category_data_version(baseurl, provider, category, extensi
         expected_status_code = 200
         validate(resp, expected_status_code, extension)
 
+@pytest.mark.parametrize("extension", [''])
+def test_get_psql_server_version(baseurl, extension):
+    url = baseurl + '/db-server-version'
+    resp = requests.get(url, verify=False)
+    expected_status_code = 200
+    validate(resp, expected_status_code, extension)
+
 #negative tests
 @pytest.mark.parametrize("extension", ['', '.json', '.xml'])
 @pytest.mark.parametrize("category", ['images', 'servers'])

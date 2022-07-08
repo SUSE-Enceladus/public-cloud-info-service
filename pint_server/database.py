@@ -21,6 +21,7 @@
 import enum
 import logging
 import os
+import re
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
@@ -213,3 +214,13 @@ def init_db(dbconfig=None, outputfile=None, echo=None,
         Base.metadata.create_all(bind=engine)
 
     return db_session
+
+
+def get_psql_server_version(db_session):
+    """Return the psql server version"""
+    result = db_session.execute("select version()")
+    for row in result:
+        version = re.search(r'PostgreSQL\s+\d+.\d+', str(row))
+        if version:
+            break
+    return version.group(0)

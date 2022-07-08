@@ -29,7 +29,7 @@ from xml.dom import minidom
 import xml.etree.ElementTree as ET
 
 import pint_server
-from pint_server.database import init_db
+from pint_server.database import init_db, get_psql_server_version
 from pint_server.models import (ImageState, AmazonImagesModel,
                                 OracleImagesModel, AlibabaImagesModel,
                                 MicrosoftImagesModel, GoogleImagesModel,
@@ -585,6 +585,13 @@ def get_package_version():
     return make_response(
         {'package version': pint_server.__VERSION__}, None, None)
 
+
+@app.route('/db-server-version', methods=['GET'])
+def get_db_server_version():
+    db_version = get_psql_server_version(db_session)
+    return make_response(
+        {'postgreSQL server version': db_version}, None, None)
+    
 
 @app.route('/', methods=['GET'])
 def redirect_to_public_cloud():
