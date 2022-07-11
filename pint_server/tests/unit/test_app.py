@@ -51,6 +51,14 @@ def test_unsupported_version(client, extension):
             rv = client.get(route)
             validate(rv, 400, extension)
 
+@pytest.mark.parametrize("extension", [''])
+def test_get_database_server_version(client, extension):
+    with mock.patch('pint_server.app.get_psql_server_version',
+                    return_value="14.2"):
+        route = '/db-server-version'
+        rv = client.get(route)
+        validate(rv, 200, extension)
+        assert json.loads(rv.data) == {"postgreSQL server version": "14.2"}
 
 @pytest.mark.parametrize("provider", ["alibaba", "amazon", "google", "microsoft", "oracle"])
 @pytest.mark.parametrize("extension", ['', '.json', '.xml'])
