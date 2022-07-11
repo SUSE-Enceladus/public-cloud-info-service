@@ -590,7 +590,7 @@ def get_package_version():
 def get_db_server_version():
     db_version = get_psql_server_version(db_session)
     return make_response(
-        {'postgreSQL server version': db_version}, None, None)
+        {'database server version': db_version}, None, None)
     
 
 @app.route('/', methods=['GET'])
