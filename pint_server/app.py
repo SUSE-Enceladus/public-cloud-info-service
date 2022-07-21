@@ -18,7 +18,10 @@
 import datetime
 import math
 import re
+from collections import namedtuple
+from dateutil.relativedelta import relativedelta
 from decimal import Decimal
+from functools import lru_cache
 from flask import (
     abort,
     Flask,
@@ -45,6 +48,32 @@ from pint_server.models import (ImageState, AmazonImagesModel,
                                 AmazonServersModel, MicrosoftServersModel,
                                 GoogleServersModel, ServerType,
                                 VersionsModel, MicrosoftRegionMapModel)
+
+
+# hashable helper class to create named tuples from the details in
+# an image entry that are relevant for deletion date tracking.
+DeletionDetails = namedtuple("DeletionDetails",
+                             " ".join(["state",
+                                       "deprecatedon",
+                                       "deletedon"]))
+
+
+# helper regexp matcher for dates specified in the %Y%m%d (4 digits
+# for year, 2 digits for month, 2 digits for day) format
+date_matcher = re.compile(
+    r'\d{4}' +  # 4 digit year
+    r'(' +  # 2 digit month, 2 digit day
+    # Months with 31 days
+    r'(01|03|05|07|08|10|12)(0[1-9]|[1-2][0-9]|3[0-1])' +
+    r'|' +
+    # Months with 30 days
+    r'(04|06|09|11)(0[1-9]|[1-2][0-9]|30)' +
+    r'|' +
+    # February
+    r'02(0[1-9]|[1-2][0-9])' +
+    r')' +
+    r''
+)
 
 
 app = Flask(__name__)
@@ -107,10 +136,42 @@ SUPPORTED_CATEGORIES = ['images', 'servers']
 # maximum payload size to 5.5MB to account for the HTTP protocol overheads
 MAX_PAYLOAD_SIZE = 5500000
 
+# Provider specific deletion relative time deltas
+DELETION_RELATIVE_DELTA_MAP = {
+    'amazon': {
+        'years':2,
+        'months':0,
+        'days':0
+    }
+}
+
+# Default deletion relative time deltas
+DELETION_RELATIVE_DELTA_DEFAULT = {
+    'years':0,
+    'months':6,
+    'days':0
+}
+
+
+DATE_FORMAT = '%Y%m%d'
+
+
+def get_deletion_relative_delta(provider):
+    return relativedelta(**DELETION_RELATIVE_DELTA_MAP.get(
+            provider, DELETION_RELATIVE_DELTA_DEFAULT))
+
+
+def get_datetime_date(date):
+    try:
+        return datetime.datetime.strptime(date, DATE_FORMAT)
+    except ValueError:
+        abort(Response('', status=404))
+
 
 def get_supported_providers():
     versions  = VersionsModel.query.with_entities(VersionsModel.tablename)
-    return list({re.sub('(servers|images)', '', v.tablename) for v in versions})
+    # sort the list of providers so that the order is consistent going forward
+    return sorted({re.sub('(servers|images)', '', v.tablename) for v in versions})
 
 
 def get_providers():
@@ -139,6 +200,12 @@ def json_to_xml(json_obj, collection_name, element_name):
 
 
 def get_formatted_dict(obj, extra_attrs=None, exclude_attrs=None):
+    # make exclude attrs an empty list if not specified so that we
+    # don't have to check for it being non-None on every iteration
+    # below
+    if exclude_attrs is None:
+        exclude_attrs = []
+
     obj_dict = {}
     for attr in obj.__dict__.keys():
         # FIXME(gyee): the orignal Pint server does not return the "changeinfo"
@@ -153,7 +220,7 @@ def get_formatted_dict(obj, extra_attrs=None, exclude_attrs=None):
         if attr.lower() == 'shape':
             continue
 
-        if exclude_attrs and attr in exclude_attrs:
+        if attr in exclude_attrs:
             continue
         elif attr[0] == '_':
             continue
@@ -174,12 +241,47 @@ def get_formatted_dict(obj, extra_attrs=None, exclude_attrs=None):
                      obj_dict[attr] = (
                          REGIONSERVER_SMT_REVERSED_MAP[obj.type.value])
             elif isinstance(value, datetime.date):
-                obj_dict[attr] = value.strftime('%Y%m%d')
+                obj_dict[attr] = value.strftime(DATE_FORMAT)
             else:
                 obj_dict[attr] = null_to_empty(value)
     if extra_attrs:
         obj_dict.update(extra_attrs)
     return obj_dict
+
+
+# Helper functions for performing provider specific formatting of
+# the response dictionary
+def formatted_provider_results(provider, results, exclude_attrs, extra_attrs):
+
+    try:
+        formatted = [get_formatted_dict(r,
+                                        exclude_attrs=exclude_attrs,
+                                        extra_attrs=extra_attrs)
+                     for r in results]
+    except DataError:
+        abort(Response('', status=404))
+
+    return formatted
+
+
+# Formatting helper for provider image list results
+def formatted_provider_images(provider, images, extra_attrs=None):
+    # retrieve list of attrs that should be excluded for provider images
+    exclude_attrs = PROVIDER_IMAGES_EXCLUDE_ATTRS.get(provider)
+
+    return formatted_provider_results(provider, images,
+                                      exclude_attrs=exclude_attrs,
+                                      extra_attrs=extra_attrs)
+
+
+# Formatting helper for provider image list results
+def formatted_provider_servers(provider, servers, extra_attrs=None):
+    # retrieve list of attrs that should be excluded for provider servers
+    exclude_attrs = PROVIDER_SERVERS_EXCLUDE_ATTRS.get(provider)
+
+    return formatted_provider_results(provider, servers,
+                                      exclude_attrs=exclude_attrs,
+                                      extra_attrs=extra_attrs)
 
 
 def get_mapped_server_type_for_provider(provider, server_type):
@@ -206,9 +308,7 @@ def get_provider_servers_for_type(provider, server_type):
 
     servers = PROVIDER_SERVERS_MODEL_MAP[provider].query.filter(
         PROVIDER_SERVERS_MODEL_MAP[provider].type == mapped_server_type)
-    exclude_attrs = PROVIDER_SERVERS_EXCLUDE_ATTRS.get(provider)
-    return [get_formatted_dict(server, exclude_attrs=exclude_attrs)
-            for server in servers]
+    return formatted_provider_servers(provider, servers)
 
 
 def get_provider_servers_types(provider):
@@ -225,7 +325,42 @@ def get_provider_servers_types(provider):
         return [{'name': 'smt'}, {'name': 'regionserver'}]
 
 
-def get_provider_regions(provider):
+# generate a provider specific hash that is dependent on the data
+# versions of the respective provider's category tables, if they
+# exist.
+# Optionally specify a category of table as a string or a list of
+# categories if desired. Defaults to matching images and servers
+# tables for a provider.
+def get_provider_hash(provider, categories=None):
+    if categories is None:
+        categories = ['images', 'servers']
+    elif type(categories) is str:
+        categories = [categories]
+
+    provider_tables = [provider + c
+                       for c in categories]
+
+    found_versions = (v.version
+                for v in VersionsModel.query.filter(
+                    VersionsModel.tablename.in_(provider_tables))
+                    .order_by(VersionsModel.tablename)
+    )
+
+    # include the provider name in the hashed content
+    return hash((provider, found_versions))
+
+
+# caches results of retrieving regions list for providers; cache_hash
+# argument can be used to ensure stale entries get expired. Maintains
+# at most one active cache entry for each provider. This caching works
+# for both short lived instances handling a single request, as it will
+# cache the region list for a specific provider so it only needs to be
+# calulated once, as well as for persistent server instances, even if
+# the DB data changes.
+@lru_cache(maxsize=len(PROVIDER_IMAGES_MODEL_MAP))
+def _query_provider_regions(provider, cache_hash):
+    del cache_hash  # has served it's purpose and is not used below
+
     if provider == 'microsoft':
         return _get_all_azure_regions()
 
@@ -246,18 +381,32 @@ def get_provider_regions(provider):
     for image in images:
         if image.region not in region_list:
             region_list.append(image.region)
-    return [{'name': r } for r in region_list]
+
+    return region_list
+
+
+def query_provider_regions(provider):
+    # pass in a hash based on provider table data versions as
+    # one of the arguments to the lru_cache'd function to ensure
+    # that stale entries will be skipped/expired if the DB tables
+    # were updated since the last call.
+    return _query_provider_regions(provider,
+                                   get_provider_hash(provider))
+
+
+def get_provider_regions(provider):
+
+    regions = query_provider_regions(provider)
+
+    return [{'name': r } for r in regions]
 
 
 def _get_all_azure_regions():
-    regions = []
+    regions = set()
     environments = MicrosoftRegionMapModel.query.all()
     for environment in environments:
-        if environment.region not in regions:
-            regions.append(environment.region)
-        if environment.canonicalname not in regions:
-            regions.append(environment.canonicalname)
-    return [{'name': r } for r in sorted(regions)]
+        regions.update((environment.region, environment.canonicalname))
+    return sorted(regions)
 
 
 def _get_azure_servers(region, server_type=None):
@@ -290,16 +439,11 @@ def _get_azure_servers(region, server_type=None):
         servers = MicrosoftServersModel.query.filter(
             MicrosoftServersModel.region.in_(all_regions))
 
-    try:
-        exclude_attrs = PROVIDER_SERVERS_EXCLUDE_ATTRS.get('microsoft')
-        return [get_formatted_dict(server, exclude_attrs=exclude_attrs)
-                for server in servers]
-    except DataError:
-        abort(Response('', status=404))
+    return formatted_provider_servers('microsoft', servers)
 
 
-def _get_azure_images_for_region_state(region, state):
-    # first lookup the environment for the given region
+def _get_azure_environment_name_for_region(region):
+    # lookup environment for given region, assuming unique per region
     environment = MicrosoftRegionMapModel.query.filter(
         or_(MicrosoftRegionMapModel.region == region,
             MicrosoftRegionMapModel.canonicalname == region)).first()
@@ -307,10 +451,12 @@ def _get_azure_images_for_region_state(region, state):
     if not environment:
         abort(Response('', status=404))
 
-    # assume the environment is unique per region
-    environment_name = environment.environment
+    return environment.environment
 
-    # now pull all the images that matches the environment and state
+def _get_azure_images_for_region_state(region, state=None):
+    environment_name = _get_azure_environment_name_for_region(region)
+
+    # query all images with matching environment and state (if specified)
     if state is None:
         images = MicrosoftImagesModel.query.filter(
             MicrosoftImagesModel.environment == environment_name)
@@ -319,50 +465,166 @@ def _get_azure_images_for_region_state(region, state):
             MicrosoftImagesModel.environment == environment_name,
             MicrosoftImagesModel.state == state)
 
-    extra_attrs = {'region': region}
-    exclude_attrs = PROVIDER_IMAGES_EXCLUDE_ATTRS.get('microsoft')
-    try:
-        return [get_formatted_dict(image, extra_attrs=extra_attrs,
-                                   exclude_attrs=exclude_attrs)
-                for image in images]
-    except DataError:
-        abort(Response('', status=404))
+    return images
+
+
+def query_provider_images_for_region_and_state(provider, region, state):
+
+    if provider == 'microsoft':
+        images = _get_azure_images_for_region_state(region, state)
+
+    elif (hasattr(PROVIDER_IMAGES_MODEL_MAP[provider], 'region')):
+        images = PROVIDER_IMAGES_MODEL_MAP[provider].query.filter(
+            PROVIDER_IMAGES_MODEL_MAP[provider].region == region,
+            PROVIDER_IMAGES_MODEL_MAP[provider].state == state)
+    else:
+        images = PROVIDER_IMAGES_MODEL_MAP[provider].query.filter(
+            PROVIDER_IMAGES_MODEL_MAP[provider].state == state)
+
+    return images
 
 
 def get_provider_images_for_region_and_state(provider, region, state):
-    images = []
+    images = query_provider_images_for_region_and_state(
+            provider, region, state)
+
+    extra_attrs = {}
     if provider == 'microsoft':
-        return _get_azure_images_for_region_state(region, state)
+        extra_attrs['region'] = region
 
-    region_names = []
-    for each in get_provider_regions(provider):
-        region_names.append(each['name'])
-    if state in ImageState.__members__ and region in region_names:
-        if (hasattr(PROVIDER_IMAGES_MODEL_MAP[provider], 'region')):
-            images = PROVIDER_IMAGES_MODEL_MAP[provider].query.filter(
-                PROVIDER_IMAGES_MODEL_MAP[provider].region == region,
-                PROVIDER_IMAGES_MODEL_MAP[provider].state == state)
-        else:
-            images = PROVIDER_IMAGES_MODEL_MAP[provider].query.filter(
-                PROVIDER_IMAGES_MODEL_MAP[provider].state == state)
-
-        exclude_attrs = PROVIDER_IMAGES_EXCLUDE_ATTRS.get(provider)
-        return [get_formatted_dict(image, exclude_attrs=exclude_attrs)
-                for image in images]
-    else:
-        abort(Response('', status=404))
+    return formatted_provider_images(provider, images, extra_attrs)
 
 
 def get_provider_images_for_state(provider, state):
-    if state in ImageState.__members__:
-        images = PROVIDER_IMAGES_MODEL_MAP[provider].query.filter(
-            PROVIDER_IMAGES_MODEL_MAP[provider].state == state)
-    else:
-        abort(Response('', status=404))
-    exclude_attrs = PROVIDER_IMAGES_EXCLUDE_ATTRS.get(provider)
-    return [get_formatted_dict(image, exclude_attrs=exclude_attrs)
-            for image in images]
+    images = PROVIDER_IMAGES_MODEL_MAP[provider].query.filter(
+        PROVIDER_IMAGES_MODEL_MAP[provider].state == state)
+    return formatted_provider_images(provider, images)
 
+
+def _get_azure_deprecatedby_images_for_region(deprecatedby, region):
+    environment_name = _get_azure_environment_name_for_region(region)
+
+    # query all images with matching environment, in the deprecated
+    # state, with a deprecatedon date <= deprecatedby.
+    images = MicrosoftImagesModel.query.filter(
+        MicrosoftImagesModel.environment == environment_name,
+        MicrosoftImagesModel.state == ImageState.deprecated,
+        MicrosoftImagesModel.deprecatedon < deprecatedby,
+    )
+
+    return images
+
+
+def query_deletedby_images_in_provider_region(
+        deletedby, provider, region=None
+    ):
+
+    # get provider specific relative delta for deletions
+    deletion_delta = get_deletion_relative_delta(provider)
+
+    # calculate deprecatedby data associated with deletedby date
+    deprecatedby = deletedby - deletion_delta
+
+    if region is None:
+        images = PROVIDER_IMAGES_MODEL_MAP[provider].query.filter(
+            PROVIDER_IMAGES_MODEL_MAP[provider].state == ImageState.deprecated,
+            PROVIDER_IMAGES_MODEL_MAP[provider].deprecatedon < deprecatedby,
+        )
+    elif provider == 'microsoft':
+        images = _get_azure_deprecatedby_images_for_region(deprecatedby,
+                                                           region)
+    elif hasattr(PROVIDER_IMAGES_MODEL_MAP[provider], 'region'):
+        images = PROVIDER_IMAGES_MODEL_MAP[provider].query.filter(
+            PROVIDER_IMAGES_MODEL_MAP[provider].region == region,
+            PROVIDER_IMAGES_MODEL_MAP[provider].state == ImageState.deprecated,
+            PROVIDER_IMAGES_MODEL_MAP[provider].deprecatedon < deprecatedby,
+        )
+
+    return images
+
+
+def get_provider_images_to_be_deletedby(deletedby, provider, region=None):
+    images = query_deletedby_images_in_provider_region(
+        deletedby, provider, region)
+
+    extra_attrs = {}
+    if region and provider == 'microsoft':
+        extra_attrs['region'] = region
+
+    return formatted_provider_images(provider, images,
+                                     extra_attrs=extra_attrs)
+
+
+def _query_image_in_azure_region(image_name, region):
+    # lookup environment for given region, assuming unique per region
+    environment_name = _get_azure_environment_name_for_region(region)
+
+    # retrieve matching images for region
+    images = MicrosoftImagesModel.query.filter(
+        MicrosoftImagesModel.environment == environment_name,
+        MicrosoftImagesModel.name == image_name)
+
+    return images
+
+
+def query_image_in_provider_region(image_name, provider, region=None):
+    if region is None:
+        images = PROVIDER_IMAGES_MODEL_MAP[provider].query.filter(
+            PROVIDER_IMAGES_MODEL_MAP[provider].name == image_name)
+    # microsoft needs special handling for region queries
+    elif provider == 'microsoft':
+        images = _query_image_in_azure_region(image_name, region)
+
+    # if provider has regions retrieve matching images for region
+    elif (hasattr(PROVIDER_IMAGES_MODEL_MAP[provider], 'region')):
+        images = PROVIDER_IMAGES_MODEL_MAP[provider].query.filter(
+            PROVIDER_IMAGES_MODEL_MAP[provider].region == region,
+            PROVIDER_IMAGES_MODEL_MAP[provider].name == image_name)
+
+    return images
+
+
+def get_image_deletiondate_in_provider(image, provider, region=None):
+
+    images = query_image_in_provider_region(image, provider, region)
+
+    # depending on provider there may be multiple images all of
+    # which should have the same state, deprecatedon and deletedon
+    # values. Use a set to eliminate duplicates, and a namedtuple
+    # helper to create a hashable object.
+    image_set = {DeletionDetails(i.state,
+                                 i.deprecatedon,
+                                 i.deletedon)
+                 for i in images
+                 if i.state in [ImageState.deprecated,
+                                ImageState.deleted]}
+
+    # TODO(rtamalin): is this even possible?
+    if len(image_set) > 1:
+        abort(Response('', status=404))
+
+    # if image is in not in deprecated/deleted state the image set
+    # will be empty, so the result will be empty.
+    if len(image_set) < 1:
+        result = {}
+
+    else:
+        image = image_set.pop()
+
+        # if the image is already in the deleted state return the
+        # deletedon date.
+        if image.state == ImageState.deleted:
+            deletiondate = image.deletedon
+        else:
+            # otherwise calculate the expected deletion date using the
+            # provider specific relative deletion delta
+            deletiondate = image.deprecatedon + get_deletion_relative_delta(
+                                                    provider)
+
+        # result is determined deltion date
+        result = dict(deletiondate=deletiondate.strftime(DATE_FORMAT))
+
+    return result
 
 
 def get_provider_servers_for_region(provider, region):
@@ -370,19 +632,11 @@ def get_provider_servers_for_region(provider, region):
     if provider == 'microsoft':
         return _get_azure_servers(region)
 
-    region_names = []
-    for each in get_provider_regions(provider):
-        region_names.append(each['name'])
-    if region in region_names:
-        if PROVIDER_SERVERS_MODEL_MAP.get(provider) != None:
-            servers = PROVIDER_SERVERS_MODEL_MAP[provider].query.filter(
-                PROVIDER_SERVERS_MODEL_MAP[provider].region == region)
-    else:
-        abort(Response('', status=404))
+    if PROVIDER_SERVERS_MODEL_MAP.get(provider) != None:
+        servers = PROVIDER_SERVERS_MODEL_MAP[provider].query.filter(
+            PROVIDER_SERVERS_MODEL_MAP[provider].region == region)
 
-    exclude_attrs = PROVIDER_SERVERS_EXCLUDE_ATTRS.get(provider)
-    return [get_formatted_dict(server, exclude_attrs=exclude_attrs)
-            for server in servers]
+    return formatted_provider_servers(provider, servers)
 
 
 def get_provider_servers_for_region_and_type(provider, region, server_type):
@@ -397,45 +651,29 @@ def get_provider_servers_for_region_and_type(provider, region, server_type):
     if not PROVIDER_SERVERS_MODEL_MAP.get(provider):
         return servers
 
-    region_names = []
-    for each in get_provider_regions(provider):
-        region_names.append(each['name'])
-    if region in region_names:
-        servers = PROVIDER_SERVERS_MODEL_MAP[provider].query.filter(
-            PROVIDER_SERVERS_MODEL_MAP[provider].region == region,
-            PROVIDER_SERVERS_MODEL_MAP[provider].type == mapped_server_type)
-        exclude_attrs = PROVIDER_SERVERS_EXCLUDE_ATTRS.get(provider)
-        return [get_formatted_dict(server, exclude_attrs=exclude_attrs)
-                for server in servers]
-    else:
-        abort(Response('', status=404))
+    servers = PROVIDER_SERVERS_MODEL_MAP[provider].query.filter(
+        PROVIDER_SERVERS_MODEL_MAP[provider].region == region,
+        PROVIDER_SERVERS_MODEL_MAP[provider].type == mapped_server_type)
+    return formatted_provider_servers(provider, servers)
 
 def get_provider_images_for_region(provider, region):
-    if provider == 'microsoft':
-        return _get_azure_images_for_region_state(region, None)
-
     images = []
-    region_names = []
-    for each in get_provider_regions(provider):
-        region_names.append(each['name'])
-    if region in region_names:
-        if hasattr(PROVIDER_IMAGES_MODEL_MAP[provider], 'region'):
-            images = PROVIDER_IMAGES_MODEL_MAP[provider].query.filter(
-                PROVIDER_IMAGES_MODEL_MAP[provider].region == region)
-    else:
-        abort(Response('', status=404))
-    exclude_attrs = PROVIDER_IMAGES_EXCLUDE_ATTRS.get(provider)
-    return [get_formatted_dict(image, exclude_attrs=exclude_attrs)
-            for image in images]
+    extra_attrs = {}
+    if provider == 'microsoft':
+        images = _get_azure_images_for_region_state(region, None)
+        extra_attrs['region'] = region
+
+    elif hasattr(PROVIDER_IMAGES_MODEL_MAP[provider], 'region'):
+        images = PROVIDER_IMAGES_MODEL_MAP[provider].query.filter(
+            PROVIDER_IMAGES_MODEL_MAP[provider].region == region)
+    return formatted_provider_images(provider, images, extra_attrs)
 
 
 def get_provider_servers(provider):
     servers = []
     if PROVIDER_SERVERS_MODEL_MAP.get(provider) != None:
         servers = PROVIDER_SERVERS_MODEL_MAP[provider].query.all()
-    exclude_attrs = PROVIDER_SERVERS_EXCLUDE_ATTRS.get(provider)
-    return [get_formatted_dict(server, exclude_attrs=exclude_attrs)
-            for server in servers]
+    return formatted_provider_servers(provider, servers)
 
 
 def trim_images_payload(images):
@@ -466,10 +704,8 @@ def trim_images_payload(images):
 def get_provider_images(provider):
     images = PROVIDER_IMAGES_MODEL_MAP[provider].query.order_by(
         desc(PROVIDER_IMAGES_MODEL_MAP[provider].publishedon)).all()
-    exclude_attrs = PROVIDER_IMAGES_EXCLUDE_ATTRS.get(provider)
     return trim_images_payload(
-            [get_formatted_dict(image, exclude_attrs=exclude_attrs)
-                for image in images])
+                formatted_provider_images(provider, images))
 
 
 def get_data_version_for_provider_category(provider, category):
@@ -492,9 +728,25 @@ def assert_valid_provider(provider):
         abort(Response('', status=404))
 
 
+def assert_valid_provider_region(provider, region):
+    provider_regions = query_provider_regions(provider)
+    if region not in provider_regions:
+        abort(Response('', status=404))
+
+
+def assert_valid_state(state):
+    if state not in ImageState.__members__:
+        abort(Response('', status=404))
+
+
 def assert_valid_category(category):
     if category not in SUPPORTED_CATEGORIES:
         abort(Response('', status=400))
+
+
+def assert_valid_date(date):
+    if not date_matcher.match(date):
+        abort(Response('', status=404))
 
 
 def make_response(content_dict, collection_name, element_name):
@@ -556,6 +808,7 @@ def list_provider_regions(provider):
            methods=['GET'])
 def list_servers_for_provider_region_and_type(provider, region, server_type):
     assert_valid_provider(provider)
+    assert_valid_provider_region(provider, region)
     servers = get_provider_servers_for_region_and_type(provider,
         region, server_type)
     return make_response(servers, 'servers', 'server')
@@ -575,8 +828,65 @@ def list_servers_for_provider_type(provider, server_type):
 @app.route('/v1/<provider>/<region>/images/<state>.xml', methods=['GET'])
 def list_images_for_provider_region_and_state(provider, region, state):
     assert_valid_provider(provider)
+    assert_valid_provider_region(provider, region)
+    assert_valid_state(state)
     images = get_provider_images_for_region_and_state(provider, region, state)
     return make_response(images, 'images', 'image')
+
+
+@app.route('/v1/<provider>/<region>/images/deletiondate/<image>', methods=['GET'])
+@app.route('/v1/<provider>/<region>/images/deletiondate/<image>.json', methods=['GET'])
+@app.route('/v1/<provider>/<region>/images/deletiondate/<image>.xml', methods=['GET'])
+def get_image_deletiondate_for_provider_region(provider, region, image):
+    assert_valid_provider(provider)
+    assert_valid_provider_region(provider, region)
+    deletiondate = get_image_deletiondate_in_provider(image, provider, region)
+    return make_response(deletiondate, None, None)
+
+
+@app.route('/v1/<provider>/images/deletiondate/<image>', methods=['GET'])
+@app.route('/v1/<provider>/images/deletiondate/<image>.json', methods=['GET'])
+@app.route('/v1/<provider>/images/deletiondate/<image>.xml', methods=['GET'])
+def get_image_deletiondate_for_provider(provider, image):
+    assert_valid_provider(provider)
+    deletiondate = get_image_deletiondate_in_provider(image, provider)
+    return make_response(deletiondate, None, None)
+
+
+@app.route('/v1/<provider>/<region>/images/deletedby/<date>', methods=['GET'])
+@app.route('/v1/<provider>/<region>/images/deletedby/<date>.json', methods=['GET'])
+@app.route('/v1/<provider>/<region>/images/deletedby/<date>.xml', methods=['GET'])
+def list_images_deletedby_for_provider_region(provider, region, date):
+    assert_valid_provider(provider)
+    assert_valid_provider_region(provider, region)
+    assert_valid_date(date)
+    deletedby = get_datetime_date(date)
+    images = get_provider_images_to_be_deletedby(deletedby, provider, region)
+    return make_response(images, 'images', 'image')
+
+
+@app.route('/v1/<provider>/images/deletedby/<date>', methods=['GET'])
+@app.route('/v1/<provider>/images/deletedby/<date>.json', methods=['GET'])
+@app.route('/v1/<provider>/images/deletedby/<date>.xml', methods=['GET'])
+def list_images_deletedby_for_provider(provider, date):
+    assert_valid_provider(provider)
+    assert_valid_date(date)
+    deletedby = get_datetime_date(date)
+    images = get_provider_images_to_be_deletedby(deletedby, provider)
+    return make_response(images, 'images', 'image')
+
+
+@app.route('/v1/images/deletedby/<date>', methods=['GET'])
+@app.route('/v1/images/deletedby/<date>.json', methods=['GET'])
+@app.route('/v1/images/deletedby/<date>.xml', methods=['GET'])
+def list_images_deletedby(date):
+    assert_valid_date(date)
+    deletedby = get_datetime_date(date)
+    provider_images = {}
+    for provider in PROVIDER_IMAGES_MODEL_MAP.keys():
+        provider_images[provider] = get_provider_images_to_be_deletedby(
+            deletedby, provider)
+    return make_response(provider_images, 'images', 'image')
 
 
 @app.route('/v1/<provider>/images/<state>', methods=['GET'])
@@ -584,6 +894,7 @@ def list_images_for_provider_region_and_state(provider, region, state):
 @app.route('/v1/<provider>/images/<state>.xml', methods=['GET'])
 def list_images_for_provider_state(provider, state):
     assert_valid_provider(provider)
+    assert_valid_state(state)
     images = get_provider_images_for_state(provider, state)
     return make_response(images, 'images', 'image')
 
@@ -593,6 +904,7 @@ def list_images_for_provider_state(provider, state):
 @app.route('/v1/<provider>/<region>/<category>.xml', methods=['GET'])
 def list_provider_resource_for_category(provider, region, category):
     assert_valid_provider(provider)
+    assert_valid_provider_region(provider, region)
     assert_valid_category(category)
     resources = globals()['get_provider_%s_for_region' % (category)](
         provider, region)
@@ -631,7 +943,7 @@ def get_db_server_version():
     db_version = get_psql_server_version(db_session)
     return make_response(
         {'database server version': db_version}, None, None)
-    
+
 
 @app.route('/', methods=['GET'])
 def redirect_to_public_cloud():
