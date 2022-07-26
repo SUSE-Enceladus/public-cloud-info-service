@@ -20,6 +20,7 @@ import re
 from decimal import Decimal
 from flask import (abort, Flask, jsonify, make_response, request, redirect,
                    Response)
+from flask_compress import Compress
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import text, or_
@@ -39,6 +40,7 @@ from pint_server.models import (ImageState, AmazonImagesModel,
 
 
 app = Flask(__name__)
+Compress(app)
 db_session = init_db()
 
 cors_config = {
