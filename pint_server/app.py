@@ -16,13 +16,23 @@
 # you may find current contact information at www.suse.com
 
 import datetime
+import math
 import re
 from decimal import Decimal
-from flask import (abort, Flask, jsonify, make_response, request, redirect,
-                   Response)
+from flask import (
+    abort,
+    Flask,
+    jsonify,
+    make_response,
+    redirect,
+    request,
+    Response)
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import text, or_
+from sqlalchemy import (
+    desc,
+    or_,
+    text)
 from sqlalchemy.exc import DataError
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from xml.dom import minidom
@@ -93,6 +103,10 @@ PROVIDER_SERVERS_EXCLUDE_ATTRS = {
 }
 
 SUPPORTED_CATEGORIES = ['images', 'servers']
+
+# NOTE: AWS lambda payload size cannot exceed 6MB. We are setting the
+# maximum payload size to 5.5MB to account for the HTTP protocol overheads
+MAX_PAYLOAD_SIZE = 5500000
 
 
 def get_supported_providers():
@@ -425,11 +439,38 @@ def get_provider_servers(provider):
             for server in servers]
 
 
+def trim_images_payload(images):
+    payload_size = jsonify(images=images).content_length
+
+    if payload_size >  MAX_PAYLOAD_SIZE:
+        # NOTE: assuming the size of the entries are evenly distributed, we
+        # determine the percentage of entries to trim from the end of the list,
+        # as the list is sorted in decending order by publishedon date, by
+        # calculating the percentage over the maximum payload size. Then
+        # trim the same percentage off the list, rounding up to be safe.
+        trim_size  = math.ceil(
+            ((payload_size - MAX_PAYLOAD_SIZE) / payload_size) * len(images))
+        last_publishedon = images[-trim_size]['publishedon']
+        images = images[:-trim_size]
+
+        # Now make sure we don't have partial data by finished triming all the
+        # images from all regions that have the same publishedon date that of
+        # the last image that got trimmed.
+        trim_size = 0
+        while images[-(trim_size + 1)]['publishedon'] == last_publishedon:
+            trim_size += 1
+        if trim_size:
+            images = images[:-trim_size]
+    return images
+
+
 def get_provider_images(provider):
-    images = PROVIDER_IMAGES_MODEL_MAP[provider].query.all()
+    images = PROVIDER_IMAGES_MODEL_MAP[provider].query.order_by(
+        desc(PROVIDER_IMAGES_MODEL_MAP[provider].publishedon)).all()
     exclude_attrs = PROVIDER_IMAGES_EXCLUDE_ATTRS.get(provider)
-    return [get_formatted_dict(image, exclude_attrs=exclude_attrs)
-            for image in images]
+    return trim_images_payload(
+            [get_formatted_dict(image, exclude_attrs=exclude_attrs)
+                for image in images])
 
 
 def get_data_version_for_provider_category(provider, category):
