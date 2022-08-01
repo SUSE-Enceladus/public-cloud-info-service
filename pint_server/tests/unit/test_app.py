@@ -58,7 +58,7 @@ def test_get_database_server_version(client, extension):
         route = '/db-server-version'
         rv = client.get(route)
         validate(rv, 200, extension)
-        assert json.loads(rv.data) == {"postgreSQL server version": "14.2"}
+        assert json.loads(rv.data) == {"database server version": "14.2"}
 
 @pytest.mark.parametrize("provider", ["alibaba", "amazon", "google", "microsoft", "oracle"])
 @pytest.mark.parametrize("extension", ['', '.json', '.xml'])
