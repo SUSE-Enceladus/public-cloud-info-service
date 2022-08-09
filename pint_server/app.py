@@ -325,42 +325,7 @@ def get_provider_servers_types(provider):
         return [{'name': 'smt'}, {'name': 'regionserver'}]
 
 
-# generate a provider specific hash that is dependent on the data
-# versions of the respective provider's category tables, if they
-# exist.
-# Optionally specify a category of table as a string or a list of
-# categories if desired. Defaults to matching images and servers
-# tables for a provider.
-def get_provider_hash(provider, categories=None):
-    if categories is None:
-        categories = ['images', 'servers']
-    elif type(categories) is str:
-        categories = [categories]
-
-    provider_tables = [provider + c
-                       for c in categories]
-
-    found_versions = (v.version
-                for v in VersionsModel.query.filter(
-                    VersionsModel.tablename.in_(provider_tables))
-                    .order_by(VersionsModel.tablename)
-    )
-
-    # include the provider name in the hashed content
-    return hash((provider, found_versions))
-
-
-# caches results of retrieving regions list for providers; cache_hash
-# argument can be used to ensure stale entries get expired. Maintains
-# at most one active cache entry for each provider. This caching works
-# for both short lived instances handling a single request, as it will
-# cache the region list for a specific provider so it only needs to be
-# calulated once, as well as for persistent server instances, even if
-# the DB data changes.
-@lru_cache(maxsize=len(PROVIDER_IMAGES_MODEL_MAP))
-def _query_provider_regions(provider, cache_hash):
-    del cache_hash  # has served it's purpose and is not used below
-
+def query_provider_regions(provider):
     if provider == 'microsoft':
         return _get_all_azure_regions()
 
@@ -383,15 +348,6 @@ def _query_provider_regions(provider, cache_hash):
             region_list.append(image.region)
 
     return region_list
-
-
-def query_provider_regions(provider):
-    # pass in a hash based on provider table data versions as
-    # one of the arguments to the lru_cache'd function to ensure
-    # that stale entries will be skipped/expired if the DB tables
-    # were updated since the last call.
-    return _query_provider_regions(provider,
-                                   get_provider_hash(provider))
 
 
 def get_provider_regions(provider):
