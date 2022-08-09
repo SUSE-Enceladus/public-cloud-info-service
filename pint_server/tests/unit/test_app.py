@@ -150,36 +150,37 @@ def test_get_provider_regions_category(client, provider, category, extension):
         mock_valid_regions.append(each['name'])
     for region in mock_valid_regions:
         with mock.patch('pint_server.app.assert_valid_provider'):
-            with mock.patch('pint_server.app.assert_valid_category'):
-                if category == 'images':
-                    provider_images = mock_pint_data.mocked_return_value_images[provider]
-                    provider_images_by_region = mock_pint_data.filter_mocked_return_value_images_region(provider_images,
-                                                                                                        region)
-                    expected_images = mock_pint_data.construct_mock_expected_response(provider_images_by_region,
-                                                                                      'images')
-                    with mock.patch('pint_server.app.get_provider_images_for_region',
-                                    return_value=provider_images_by_region) as get_provider_images_for_region:
-                        route = '/v1/' + provider + '/' + region + '/images' + extension
-                        rv = client.get(route)
-                        get_provider_images_for_region.assert_called_with(provider, region)
-                        validate(rv, 200, extension)
-                        if extension != '.xml':
-                            assert expected_images == json.loads(rv.data)
+            with mock.patch('pint_server.app.assert_valid_provider_region'):
+                with mock.patch('pint_server.app.assert_valid_category'):
+                    if category == 'images':
+                        provider_images = mock_pint_data.mocked_return_value_images[provider]
+                        provider_images_by_region = mock_pint_data.filter_mocked_return_value_images_region(provider_images,
+                                                                                                            region)
+                        expected_images = mock_pint_data.construct_mock_expected_response(provider_images_by_region,
+                                                                                        'images')
+                        with mock.patch('pint_server.app.get_provider_images_for_region',
+                                        return_value=provider_images_by_region) as get_provider_images_for_region:
+                            route = '/v1/' + provider + '/' + region + '/images' + extension
+                            rv = client.get(route)
+                            get_provider_images_for_region.assert_called_with(provider, region)
+                            validate(rv, 200, extension)
+                            if extension != '.xml':
+                                assert expected_images == json.loads(rv.data)
 
-                if category == 'servers':
-                    provider_servers = mock_pint_data.mocked_return_value_servers[provider]
-                    provider_servers_by_region = mock_pint_data.filter_mocked_return_value_servers_region(
-                        provider_servers, region)
-                    expected_servers = mock_pint_data.construct_mock_expected_response(provider_servers_by_region,
-                                                                                       'servers')
-                    with mock.patch('pint_server.app.get_provider_servers_for_region',
-                                    return_value=provider_servers_by_region) as get_provider_servers_for_region:
-                        route = '/v1/' + provider + '/' + region + '/servers' + extension
-                        rv = client.get(route)
-                        get_provider_servers_for_region.assert_called_with(provider, region)
-                        validate(rv, 200, extension)
-                        if extension != '.xml':
-                            assert expected_servers == json.loads(rv.data)
+                    if category == 'servers':
+                        provider_servers = mock_pint_data.mocked_return_value_servers[provider]
+                        provider_servers_by_region = mock_pint_data.filter_mocked_return_value_servers_region(
+                            provider_servers, region)
+                        expected_servers = mock_pint_data.construct_mock_expected_response(provider_servers_by_region,
+                                                                                        'servers')
+                        with mock.patch('pint_server.app.get_provider_servers_for_region',
+                                        return_value=provider_servers_by_region) as get_provider_servers_for_region:
+                            route = '/v1/' + provider + '/' + region + '/servers' + extension
+                            rv = client.get(route)
+                            get_provider_servers_for_region.assert_called_with(provider, region)
+                            validate(rv, 200, extension)
+                            if extension != '.xml':
+                                assert expected_servers == json.loads(rv.data)
 
 @pytest.mark.parametrize("extension", ['', '.json', '.xml'])
 @pytest.mark.parametrize("provider", ['alibaba', 'amazon', 'google', 'microsoft', 'oracle'])
@@ -190,20 +191,21 @@ def test_get_provider_regions_images_by_state(client, provider, image_state, ext
         mock_valid_regions.append(each['name'])
     for region in mock_valid_regions:
         with mock.patch('pint_server.app.assert_valid_provider'):
-            provider_images = mock_pint_data.mocked_return_value_images[provider]
-            provider_images_by_region = mock_pint_data.filter_mocked_return_value_images_region(provider_images, region)
-            provider_images_by_state = mock_pint_data.filter_mocked_return_value_images_by_state(
-                provider_images_by_region, image_state)
-            expected_images = mock_pint_data.construct_mock_expected_response(provider_images_by_state,
-                                                                              'images')
-            with mock.patch('pint_server.app.get_provider_images_for_region_and_state',
-                            return_value=provider_images_by_state) as get_provider_images_for_region_and_state:
-                route = '/v1/' + provider + '/' + region + '/images/' + image_state + extension
-                rv = client.get(route)
-                get_provider_images_for_region_and_state.assert_called_with(provider, region, image_state)
-                validate(rv, 200, extension)
-                if extension != '.xml':
-                    assert expected_images == json.loads(rv.data)
+            with mock.patch('pint_server.app.assert_valid_provider_region'):
+                provider_images = mock_pint_data.mocked_return_value_images[provider]
+                provider_images_by_region = mock_pint_data.filter_mocked_return_value_images_region(provider_images, region)
+                provider_images_by_state = mock_pint_data.filter_mocked_return_value_images_by_state(
+                    provider_images_by_region, image_state)
+                expected_images = mock_pint_data.construct_mock_expected_response(provider_images_by_state,
+                                                                                'images')
+                with mock.patch('pint_server.app.get_provider_images_for_region_and_state',
+                                return_value=provider_images_by_state) as get_provider_images_for_region_and_state:
+                    route = '/v1/' + provider + '/' + region + '/images/' + image_state + extension
+                    rv = client.get(route)
+                    get_provider_images_for_region_and_state.assert_called_with(provider, region, image_state)
+                    validate(rv, 200, extension)
+                    if extension != '.xml':
+                        assert expected_images == json.loads(rv.data)
 
 
 @pytest.mark.parametrize("extension", ['', '.json', '.xml'])
@@ -215,21 +217,22 @@ def test_get_provider_regions_servers_by_type(client, provider, type, extension)
         mock_valid_regions.append(each['name'])
     for region in mock_valid_regions:
         with mock.patch('pint_server.app.assert_valid_provider'):
-            provider_servers = mock_pint_data.mocked_return_value_servers[provider]
-            provider_servers_by_region = mock_pint_data.filter_mocked_return_value_servers_region(provider_servers,
-                                                                                                  region)
-            provider_servers_by_type = mock_pint_data.filter_mocked_return_value_servers_by_type(
-                provider_servers_by_region, type)
-            expected_servers = mock_pint_data.construct_mock_expected_response(provider_servers_by_type,
-                                                                               'servers')
-            with mock.patch('pint_server.app.get_provider_servers_for_region_and_type',
-                            return_value=provider_servers_by_type) as get_provider_servers_for_region_and_type:
-                route = '/v1/' + provider + '/' + region + '/servers/' + type + extension
-                rv = client.get(route)
-                get_provider_servers_for_region_and_type.assert_called_with(provider, region, type)
-                validate(rv, 200, extension)
-                if extension != '.xml':
-                    assert expected_servers == json.loads(rv.data)
+            with mock.patch('pint_server.app.assert_valid_provider_region'):
+                provider_servers = mock_pint_data.mocked_return_value_servers[provider]
+                provider_servers_by_region = mock_pint_data.filter_mocked_return_value_servers_region(provider_servers,
+                                                                                                    region)
+                provider_servers_by_type = mock_pint_data.filter_mocked_return_value_servers_by_type(
+                    provider_servers_by_region, type)
+                expected_servers = mock_pint_data.construct_mock_expected_response(provider_servers_by_type,
+                                                                                'servers')
+                with mock.patch('pint_server.app.get_provider_servers_for_region_and_type',
+                                return_value=provider_servers_by_type) as get_provider_servers_for_region_and_type:
+                    route = '/v1/' + provider + '/' + region + '/servers/' + type + extension
+                    rv = client.get(route)
+                    get_provider_servers_for_region_and_type.assert_called_with(provider, region, type)
+                    validate(rv, 200, extension)
+                    if extension != '.xml':
+                        assert expected_servers == json.loads(rv.data)
 
 @pytest.mark.parametrize("extension",['', '.json', '.xml'])
 @pytest.mark.parametrize("provider", ['alibaba', 'amazon', 'google', 'microsoft', 'oracle'])
