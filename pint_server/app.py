@@ -560,9 +560,9 @@ def get_image_deletiondate_in_provider(image, provider, region=None):
         abort(Response('', status=404))
 
     # if image is in not in deprecated/deleted state the image set
-    # will be empty, so the result will be empty.
+    # will be empty, so the result will be an empty deletiondate.
     if len(image_set) < 1:
-        result = {}
+        result = ""
 
     else:
         image = image_set.pop()
@@ -578,9 +578,9 @@ def get_image_deletiondate_in_provider(image, provider, region=None):
                                                     provider)
 
         # result is determined deltion date
-        result = dict(deletiondate=deletiondate.strftime(DATE_FORMAT))
+        result = deletiondate.strftime(DATE_FORMAT)
 
-    return result
+    return dict(deletiondate=result)
 
 
 def get_provider_servers_for_region(provider, region):
@@ -839,10 +839,13 @@ def list_images_deletedby(date):
     assert_valid_date(date)
     deletedby = get_datetime_date(date)
     provider_images = {}
+    providers = []
     for provider in PROVIDER_IMAGES_MODEL_MAP.keys():
-        provider_images[provider] = get_provider_images_to_be_deletedby(
-            deletedby, provider)
-    return make_response(provider_images, 'images', 'image')
+        providers.append(dict(name=provider,
+            images=get_provider_images_to_be_deletedby(deletedby,
+                                                       provider)))
+    #return make_response(provider_images, 'providers', 'provider')
+    return make_response(providers, 'providers', 'provider')
 
 
 @app.route('/v1/<provider>/images/<state>', methods=['GET'])
