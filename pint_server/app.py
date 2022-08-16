@@ -849,20 +849,22 @@ def list_images_deletedby_for_provider(provider, date):
     return make_response(images, 'images', 'image')
 
 
-@app.route('/v1/images/deletedby/<date>', methods=['GET'])
-@app.route('/v1/images/deletedby/<date>.json', methods=['GET'])
-@app.route('/v1/images/deletedby/<date>.xml', methods=['GET'])
-def list_images_deletedby(date):
-    assert_valid_date(date)
-    deletedby = get_datetime_date(date)
-    provider_images = {}
-    providers = []
-    for provider in PROVIDER_IMAGES_MODEL_MAP.keys():
-        providers.append(dict(name=provider,
-            images=get_provider_images_to_be_deletedby(deletedby,
-                                                       provider)))
-    #return make_response(provider_images, 'providers', 'provider')
-    return make_response(providers, 'providers', 'provider')
+# TODO(rtamalin):
+#   Re-enable global deletedby request once make_response has been
+#   updated to generate validly formated XML responses.
+#@app.route('/v1/images/deletedby/<date>', methods=['GET'])
+#@app.route('/v1/images/deletedby/<date>.json', methods=['GET'])
+#@app.route('/v1/images/deletedby/<date>.xml', methods=['GET'])
+#def list_images_deletedby(date):
+#    assert_valid_date(date)
+#    deletedby = get_datetime_date(date)
+#    provider_images = {}
+#    providers = []
+#    for provider in PROVIDER_IMAGES_MODEL_MAP.keys():
+#        providers.append(dict(name=provider,
+#            images=get_provider_images_to_be_deletedby(deletedby,
+#                                                       provider)))
+#    return make_response(providers, 'providers', 'provider')
 
 
 @app.route('/v1/<provider>/images/<state>', methods=['GET'])
