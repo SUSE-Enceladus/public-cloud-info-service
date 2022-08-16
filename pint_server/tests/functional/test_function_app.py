@@ -214,7 +214,6 @@ def test_get_provider_images_for_region_and_state(baseurl, provider, extension):
             url = (baseurl + '/v1/' + provider + '/' + region +
                    '/images/' + img_state + extension)
             resp = requests.get(url, verify=False)
-            print(f"resp.url = {resp.url!r}")
             expected_status_code = 200
             validate(resp, expected_status_code, extension)
             assert "images" in resp.text
@@ -234,7 +233,6 @@ def test_get_provider_images_for_state(baseurl, provider, extension):
     img_states = _get_image_states_list(baseurl)
 
     for img_state in img_states:
-        print(img_state)
         url = baseurl + '/v1/' + provider + '/images/' + img_state + extension
         resp = requests.get(url, verify=False)
         expected_status_code = 200
@@ -354,25 +352,21 @@ def test_get_provider_images_deletiondate(baseurl, provider, extension):
     regions = [''] + _get_provider_regions_list(baseurl, provider)
 
     for region in regions:
-        print(f"region: {region!r}")
         for state in img_states:
-            print(f"state: {state!r}")
             images = _get_provider_region_images_in_state(baseurl, provider, region, state)
 
-            # If no images were found for providere/region combo
+            # If no images were found for provider/region combo
             if not images:
                 continue
 
             # Just test the first image, not all images
             image = images[0]
-            print(f"image: {image!r}")
 
             # construct request URL optionally including region if not empty
             url = baseurl + '/v1/' + provider
             if region:
                 url += '/' + region
             url += '/images/deletiondate/' + image + extension
-            print(f"url: {url!r}")
 
             resp = requests.get(url, verify=False)
             expected_status_code = 200
@@ -386,8 +380,8 @@ def test_get_provider_images_deletiondate(baseurl, provider, extension):
                 else:
                     assert resp.json()['deletiondate'] != ""
             elif region:
-                # skip global level check as sometimes images can be in more
-                # than one state globally.
+                # skip provider level check as sometimes images can be in more
+                # than one state across provider regions.
                 if (extension == '.xml'):
                     assert "<deletiondate/>" in resp.text
                 else:

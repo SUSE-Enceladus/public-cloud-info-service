@@ -21,7 +21,6 @@ import re
 from collections import namedtuple
 from dateutil.relativedelta import relativedelta
 from decimal import Decimal
-from functools import lru_cache
 from flask import (
     abort,
     Flask,
@@ -572,9 +571,26 @@ def get_image_deletiondate_in_provider(image, provider, region=None):
                  if i.state in [ImageState.deprecated,
                                 ImageState.deleted]}
 
-    # TODO(rtamalin): is this even possible?
+    # If we get back multiple sets of results, we should use
+    # the earliest deprecatedon or deletedon date depending on
+    # the found state(s).
     if len(image_set) > 1:
-        abort(Response('', status=404))
+        image_states = {i.state for i in image_set}
+        deprecatedon_dates = sorted({i.deprecatedon for i in image_set if i.deprecatedon})
+        if not deprecatedon_dates:
+            deprecatedon_dates = ['']
+        deletedon_dates = sorted({i.deletedon for i in image_set if i.deletedon})
+        if not deletedon_dates:
+            deletedon_dates = ['']
+
+        if ImageState.deleted in image_states:
+            image_state = ImageState.deleted
+        else:
+            image_state = ImageState.deprecated
+
+        image_set = set([DeletionDetails(image_state,
+                                         deprecatedon_dates[0],
+                                         deletedon_dates[0])])
 
     # if image is in not in deprecated/deleted state the image set
     # will be empty, so the result will be an empty deletiondate.

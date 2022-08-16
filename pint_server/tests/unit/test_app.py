@@ -336,9 +336,9 @@ def test_get_provider_regions_deletedby(client, provider, date, extension):
                             assert expected_images == json.loads(rv.data)
 
 
-@pytest.mark.parametrize("image", ['image1', 'image2', 'image3', 'image4', 'image5', 'image6'])
+@pytest.mark.parametrize("image", mock_pint_data.mocked_deletiondate_images.keys())
 @pytest.mark.parametrize("extension", ['', '.json', '.xml'])
-@pytest.mark.parametrize("provider", ['alibaba', 'amazon', 'google', 'microsoft', 'oracle'])
+@pytest.mark.parametrize("provider", mock_pint_data.mocked_expected_deletiondate.keys())
 def test_get_provider_regions_image_deletiondate(client, provider, image, extension):
     mock_valid_regions = [None] + [r['name']
                                    for r in mock_pint_data.mocked_return_value_regions[provider]]

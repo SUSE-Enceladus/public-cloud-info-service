@@ -203,7 +203,9 @@ class MockDBImagesQuery:
 # name, that can be used as the mocked return value for the
 # pint_server.app.query_image_in_provider_region() call
 _deprecatedon_date = get_datetime_date('20220101')
+_deprecatedon_later_date = get_datetime_date('20220201')
 _deletedon_date = get_datetime_date('20220701')
+_deletedon_later_date = get_datetime_date('20220801')
 _mock_deletiondate_active_image = MockDeletionDateImage(
     state=ImageState.active,
     deprecatedon='',
@@ -219,10 +221,20 @@ _mock_deletiondate_deprecated_image = MockDeletionDateImage(
     deprecatedon=_deprecatedon_date,
     deletedon='',
 )
+_mock_deletiondate_deprecated_later_image = MockDeletionDateImage(
+    state=ImageState.deprecated,
+    deprecatedon=_deprecatedon_later_date,
+    deletedon='',
+)
 _mock_deletiondate_deleted_image = MockDeletionDateImage(
     state=ImageState.deleted,
     deprecatedon=_deprecatedon_date,
     deletedon=_deletedon_date,
+)
+_mock_deletiondate_deleted_later_image = MockDeletionDateImage(
+    state=ImageState.deleted,
+    deprecatedon=_deprecatedon_date,
+    deletedon=_deletedon_later_date,
 )
 mocked_deletiondate_images = {
     # test images in the active state
@@ -251,9 +263,30 @@ mocked_deletiondate_images = {
         _mock_deletiondate_inactive_image,
         _mock_deletiondate_deleted_image,
     ]),
+    # test images in mixed active and deprecated states and
+    # multiple deprecatedon dates
+    "image7": MockDBImagesQuery(images=[
+        _mock_deletiondate_active_image,
+        _mock_deletiondate_deprecated_image,
+        _mock_deletiondate_deprecated_later_image,
+    ]),
+    # test images in mixed inactive and deleted states and
+    # multiple deletedon dates
+    "image8": MockDBImagesQuery(images=[
+        _mock_deletiondate_inactive_image,
+        _mock_deletiondate_deleted_image,
+        _mock_deletiondate_deleted_later_image,
+    ]),
+    # test images in all states
+    "image9": MockDBImagesQuery(images=[
+        _mock_deletiondate_active_image,
+        _mock_deletiondate_inactive_image,
+        _mock_deletiondate_deprecated_image,
+        _mock_deletiondate_deleted_later_image,
+    ]),
 }
 
-# expected response for providers with 6 months deletion policy
+# expected responses for providers with 6 months deletion policy
 _mocked_6months_deletiondates = {
         'image1': '',
         'image2': '',
@@ -261,9 +294,12 @@ _mocked_6months_deletiondates = {
         'image4': '20220701',
         'image5': '20220701',
         'image6': '20220701',
+        'image7': '20220701',
+        'image8': '20220701',
+        'image9': '20220801',
 }
 
-# expected response for providers with 2 years deletion policy
+# expected responses for providers with 2 years deletion policy
 _mocked_2years_deletiondates = {
         'image1': '',
         'image2': '',
@@ -271,6 +307,9 @@ _mocked_2years_deletiondates = {
         'image4': '20220701',
         'image5': '20240101',
         'image6': '20220701',
+        'image7': '20240101',
+        'image8': '20220701',
+        'image9': '20220801',
 }
 
 # provider specific expected deletiondate responses for above
