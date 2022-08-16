@@ -481,17 +481,25 @@ def query_deletedby_images_in_provider_region(
     # calculate deprecatedby data associated with deletedby date
     deprecatedby = deletedby - deletion_delta
 
-    if region is None:
+    images = None
+
+    if region:
+        # microsoft needs special handling for region queries
+        if provider == 'microsoft':
+            images = _get_azure_deprecatedby_images_for_region(deprecatedby,
+                                                               region)
+        # if provider images table has region column retrieve matching images
+        elif hasattr(PROVIDER_IMAGES_MODEL_MAP[provider], 'region'):
+            images = PROVIDER_IMAGES_MODEL_MAP[provider].query.filter(
+                PROVIDER_IMAGES_MODEL_MAP[provider].region == region,
+                PROVIDER_IMAGES_MODEL_MAP[provider].state == ImageState.deprecated,
+                PROVIDER_IMAGES_MODEL_MAP[provider].deprecatedon < deprecatedby,
+            )
+
+    # if region was not specified, or provider wasn't microsoft or
+    # provider images table doesn't have a region column
+    if images is None:
         images = PROVIDER_IMAGES_MODEL_MAP[provider].query.filter(
-            PROVIDER_IMAGES_MODEL_MAP[provider].state == ImageState.deprecated,
-            PROVIDER_IMAGES_MODEL_MAP[provider].deprecatedon < deprecatedby,
-        )
-    elif provider == 'microsoft':
-        images = _get_azure_deprecatedby_images_for_region(deprecatedby,
-                                                           region)
-    elif hasattr(PROVIDER_IMAGES_MODEL_MAP[provider], 'region'):
-        images = PROVIDER_IMAGES_MODEL_MAP[provider].query.filter(
-            PROVIDER_IMAGES_MODEL_MAP[provider].region == region,
             PROVIDER_IMAGES_MODEL_MAP[provider].state == ImageState.deprecated,
             PROVIDER_IMAGES_MODEL_MAP[provider].deprecatedon < deprecatedby,
         )
@@ -524,17 +532,22 @@ def _query_image_in_azure_region(image_name, region):
 
 
 def query_image_in_provider_region(image_name, provider, region=None):
-    if region is None:
-        images = PROVIDER_IMAGES_MODEL_MAP[provider].query.filter(
-            PROVIDER_IMAGES_MODEL_MAP[provider].name == image_name)
-    # microsoft needs special handling for region queries
-    elif provider == 'microsoft':
-        images = _query_image_in_azure_region(image_name, region)
+    images = None
 
-    # if provider has regions retrieve matching images for region
-    elif (hasattr(PROVIDER_IMAGES_MODEL_MAP[provider], 'region')):
+    if region:
+        # microsoft needs special handling for region queries
+        if provider == 'microsoft':
+            images = _query_image_in_azure_region(image_name, region)
+        # if provider images table has region column retrieve matching images
+        elif (hasattr(PROVIDER_IMAGES_MODEL_MAP[provider], 'region')):
+            images = PROVIDER_IMAGES_MODEL_MAP[provider].query.filter(
+                PROVIDER_IMAGES_MODEL_MAP[provider].region == region,
+                PROVIDER_IMAGES_MODEL_MAP[provider].name == image_name)
+
+    # if region was not specified, or provider wasn't microsoft or
+    # provider images table doesn't have region column
+    if images is None:
         images = PROVIDER_IMAGES_MODEL_MAP[provider].query.filter(
-            PROVIDER_IMAGES_MODEL_MAP[provider].region == region,
             PROVIDER_IMAGES_MODEL_MAP[provider].name == image_name)
 
     return images
@@ -543,6 +556,10 @@ def query_image_in_provider_region(image_name, provider, region=None):
 def get_image_deletiondate_in_provider(image, provider, region=None):
 
     images = query_image_in_provider_region(image, provider, region)
+
+    # if no images were found then the provided image name is invalid
+    if not images.count():
+        abort(Response('', status=404))
 
     # depending on provider there may be multiple images all of
     # which should have the same state, deprecatedon and deletedon
