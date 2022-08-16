@@ -303,6 +303,66 @@ def test_get_provider_regions(client, extension):
             if extension != '.xml':
                 assert mock_pint_data.expected_json_regions[provider] == json.loads(rv.data)
 
+
+@pytest.mark.parametrize("date", ['20191231', '20201231', '20211231', '20221231'])
+@pytest.mark.parametrize("extension", ['', '.json', '.xml'])
+@pytest.mark.parametrize("provider", ['alibaba', 'amazon', 'google', 'microsoft', 'oracle'])
+def test_get_provider_regions_deletedby(client, provider, date, extension):
+    mock_valid_regions = [None] + [r['name']
+                                   for r in mock_pint_data.mocked_return_value_regions[provider]]
+    for region in mock_valid_regions:
+        with mock.patch('pint_server.app.assert_valid_provider'):
+            with mock.patch('pint_server.app.assert_valid_provider_region'):
+                with mock.patch('pint_server.app.assert_valid_date'):
+                    provider_images = mock_pint_data.mocked_return_value_images[provider]
+                    provider_images_by_region = mock_pint_data.filter_mocked_return_value_images_region(provider_images,
+                                                                                                        region)
+                    expected_images = mock_pint_data.construct_mock_expected_response(provider_images_by_region,
+                                                                                    'images')
+                    with mock.patch('pint_server.app.get_provider_images_to_be_deletedby',
+                                    return_value=provider_images_by_region) as get_provider_images_to_be_deletedby:
+                        route = '/v1/' + provider
+                        if region:
+                            route += '/' + region
+                        route += '/images/deletedby/' + date + extension
+                        rv = client.get(route)
+                        deletedby = mock_pint_data.get_datetime_date(date)
+                        if region:
+                            get_provider_images_to_be_deletedby.assert_called_with(deletedby, provider, region)
+                        else:
+                            get_provider_images_to_be_deletedby.assert_called_with(deletedby, provider)
+                        validate(rv, 200, extension)
+                        if extension != '.xml':
+                            assert expected_images == json.loads(rv.data)
+
+
+@pytest.mark.parametrize("image", ['image1', 'image2', 'image3', 'image4', 'image5', 'image6'])
+@pytest.mark.parametrize("extension", ['', '.json', '.xml'])
+@pytest.mark.parametrize("provider", ['alibaba', 'amazon', 'google', 'microsoft', 'oracle'])
+def test_get_provider_regions_image_deletiondate(client, provider, image, extension):
+    mock_valid_regions = [None] + [r['name']
+                                   for r in mock_pint_data.mocked_return_value_regions[provider]]
+    for region in mock_valid_regions:
+        with mock.patch('pint_server.app.assert_valid_provider'):
+            with mock.patch('pint_server.app.assert_valid_provider_region'):
+                deletiondate_images = mock_pint_data.mocked_deletiondate_images[image]
+                expected_deletiondate = mock_pint_data.mocked_expected_deletiondate[provider][image]
+                with mock.patch('pint_server.app.query_image_in_provider_region',
+                                return_value=deletiondate_images) as query_image_in_provider_region:
+                    route = '/v1/' + provider
+                    if region:
+                        route += '/' + region
+                    route += '/images/deletiondate/' + image + extension
+                    rv = client.get(route)
+                    query_image_in_provider_region.assert_called_with(image, provider, region)
+                    validate(rv, 200, extension)
+                    if extension == '.xml':
+                        if expected_deletiondate:
+                            assert expected_deletiondate in str(rv.data)
+                    else:
+                        assert expected_deletiondate == rv.json['deletiondate']
+
+
 def validate(rv, expected_status, extension):
     assert expected_status == rv.status_code
     assert rv.headers['Access-Control-Allow-Origin'] == '*'
