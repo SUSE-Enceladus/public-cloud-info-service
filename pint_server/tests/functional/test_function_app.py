@@ -19,6 +19,86 @@ import json
 import pytest
 import requests
 
+
+# For some providers we need to remap the server type returned by
+# the v1/providers/servers/types request to the corresponding field
+# name that will appear in the servers list
+_STYPE_REMAP = dict(update="smt", region="regionserver")
+_PROVIDER_STYPE_REMAP = dict(
+    amazon=_STYPE_REMAP,
+    google=_STYPE_REMAP,
+    microsoft=_STYPE_REMAP,
+)
+
+
+#
+# Helper functions for retrieving data via the API to support
+# testing efforts.
+#
+
+def _get_provider_server_types_list(baseurl, provider):
+    server_types_resp = requests.get(baseurl + '/v1/' + provider + '/servers/types',
+                                     verify=False)
+
+    # validate that the provider server types query worked
+    validate(server_types_resp, 200, '')
+
+    # extract the list of server types from the response
+    return [s['name'] for s in server_types_resp.json()['types']]
+
+
+def _get_provider_regions_list(baseurl, provider):
+    regions_resp = requests.get(baseurl + '/v1/' + provider + '/regions',
+                                verify=False)
+
+    # validate that the provider regions query worked
+    validate(regions_resp, 200, '')
+
+    # extract the list of regions from the response
+    return [r['name'] for r in regions_resp.json()['regions']]
+
+
+def _get_image_states_list(baseurl):
+    img_states_resp = requests.get(baseurl + '/v1/images/states',
+                                   verify=False)
+
+    # validate that the image states query worked
+    validate(img_states_resp, 200, '')
+
+    # extract the list of images states from the response
+    return [s['name'] for s in img_states_resp.json()['states']]
+
+
+def _get_provider_region_images_in_state(baseurl, provider, region, state):
+    url = baseurl + '/v1/' + provider
+    # if a non-empty region was provided, add it to the URL
+    if region:
+        url += '/' + region
+    url += '/images/' + state
+
+    images_resp = requests.get(url, verify=False)
+
+    # validate that the images query worked
+    validate(images_resp, 200, '')
+
+    return [i["name"] for i in images_resp.json()['images']]
+
+
+#
+# Helper functions for validating the data
+#
+
+def _provider_server_type_name(provider, server_type):
+    # return the remap'd server_type name, or server_type if
+    # not remapped for that provider.
+    return _PROVIDER_STYPE_REMAP.get(provider, {}).get(
+                server_type, server_type)
+
+
+#
+# Tests
+#
+
 def test_root_request(baseurl):
     url = baseurl
     resp = requests.get(url, allow_redirects=False, verify=False)
@@ -42,10 +122,10 @@ def test_get_provider_servers_types(baseurl, provider, extension):
     resp = requests.get(url, verify=False)
     expected_status_code = 200
     validate(resp, expected_status_code, extension)
-    if provider == 'amazon' or provider == 'google' or 'provider' == 'microsoft':
+    if provider in ['amazon', 'google', 'microsoft']:
         assert "region" in resp.text
         assert "update" in resp.text
-    if provider == 'alibaba' or provider == 'oracle':
+    if provider in ['alibaba', 'oracle']:
         assert "smt" in resp.text
         assert "regionserver" in resp.text
 
@@ -54,9 +134,9 @@ def test_get_image_states(baseurl, extension):
     url = baseurl + '/v1/images/states' + extension
     resp = requests.get(url, verify=False)
     expected_status_code = 200
+    validate(resp, expected_status_code, extension)
     assert "states" in resp.text
     expected_states = ['active','inactive','deprecated','deleted']
-    validate(resp, expected_status_code, extension)
     for state in expected_states:
         assert state in resp.text
 
@@ -77,75 +157,112 @@ def test_get_provider_regions(baseurl, provider, extension):
     if provider == 'microsoft':
         assert "useast" in resp.text
 
+
 @pytest.mark.parametrize("extension", ['', '.json', '.xml'])
 @pytest.mark.parametrize("provider", ['alibaba', 'amazon', 'google', 'microsoft', 'oracle'])
 def test_get_provider_servers_for_region_and_type(baseurl, provider, extension):
-    server_types = requests.get(baseurl + '/v1/' + provider + 'servers/types')
-    regions = requests.get(baseurl + '/v1/' + provider + '/regions', verify=False)
-    for region in json.loads(regions.content)['regions']:
+    server_types = _get_provider_server_types_list(baseurl, provider)
+    regions = _get_provider_regions_list(baseurl, provider)
+
+    for region in regions:
         for server_type in server_types:
-            url = baseurl + '/v1/' + provider + '/' + region['name'] + '/servers/' + server_type +  extension
+            url = baseurl + '/v1/' + provider + '/' + region + '/servers/' + server_type +  extension
             resp = requests.get(url, verify=False)
             expected_status_code = 200
             validate(resp, expected_status_code, extension)
-            assert region in resp.text
-            assert server_type in resp.text
+            # only check for the server type in the resp.text if
+            # there are actually servers in the response.
+            if ((extension == '.xml') and ("<servers/>" not in resp.text) or
+                (extension != '.xml') and resp.json()['servers']):
+                assert _provider_server_type_name(provider, server_type) in resp.text
+                # for Azure regions can have multiple names, but only the
+                # one of the possible names will appear in the servers entry
+                # and there isn't an easy way to remap the region name that
+                # we are testing to the one that will appear in the servers
+                # entry.
+                if provider != 'microsoft':
+                    assert region in resp.text
+
 
 @pytest.mark.parametrize("extension", ['', '.json', '.xml'])
 @pytest.mark.parametrize("provider", ['alibaba', 'amazon', 'google', 'microsoft', 'oracle'])
 def test_get_provider_servers_for_type(baseurl, provider, extension):
-    server_types = requests.get(baseurl + '/v1/' + provider + 'servers/types')
+    server_types = _get_provider_server_types_list(baseurl, provider)
+
     for server_type in server_types:
         url = baseurl + '/v1/' + provider + '/servers/' + server_type + extension
         resp = requests.get(url, verify=False)
         expected_status_code = 200
         validate(resp, expected_status_code, extension)
-        assert server_type in resp.text
+        assert "servers" in resp.text
+
+        # only check for the server type in the resp.text if
+        # there are actually servers in the response.
+        if ((extension == '.xml') and ("<servers/>" not in resp.text) or
+            (extension != '.xml') and resp.json()['servers']):
+            assert _provider_server_type_name(provider, server_type) in resp.text
+
 
 @pytest.mark.parametrize("extension", ['', '.json', '.xml'])
 @pytest.mark.parametrize("provider", ['alibaba', 'amazon', 'google', 'microsoft', 'oracle'])
 def test_get_provider_images_for_region_and_state(baseurl, provider, extension):
-    img_states = requests.get(baseurl + '/v1/' + provider + '/images/states')
-    regions = requests.get(baseurl + '/v1/' + provider + '/regions', verify=False)
-    for region in json.loads(regions.content)['regions']:
+    img_states = _get_image_states_list(baseurl)
+    regions = _get_provider_regions_list(baseurl, provider)
+
+    for region in regions:
         for img_state in img_states:
-            url = baseurl + '/v1/' + provider + '/' + region[
-                'name'] + '/images/' + img_state + extension
+            url = (baseurl + '/v1/' + provider + '/' + region +
+                   '/images/' + img_state + extension)
             resp = requests.get(url, verify=False)
+            print(f"resp.url = {resp.url!r}")
             expected_status_code = 200
             validate(resp, expected_status_code, extension)
-            assert img_state in resp.text
-            assert region in resp.text
+            assert "images" in resp.text
+
+            # only check for the img_state and region in the resp.text if
+            # there are actually images in the response.
+            if ((extension == '.xml') and ("<images/>" not in resp.text) or
+                (extension != '.xml') and resp.json()['images']):
+                assert img_state in resp.text
+                if provider not in ['google']:
+                    assert region in resp.text
+
 
 @pytest.mark.parametrize("extension", ['', '.json', '.xml'])
 @pytest.mark.parametrize("provider", ['alibaba', 'amazon', 'google', 'microsoft', 'oracle'])
 def test_get_provider_images_for_state(baseurl, provider, extension):
-    img_states = requests.get(baseurl + '/v1/' + provider + '/images/states')
+    img_states = _get_image_states_list(baseurl)
+
     for img_state in img_states:
+        print(img_state)
         url = baseurl + '/v1/' + provider + '/images/' + img_state + extension
         resp = requests.get(url, verify=False)
         expected_status_code = 200
         validate(resp, expected_status_code, extension)
-        assert img_state in resp.text
         assert "images" in resp.text
+        # only check for the img_state in the resp.text if
+        # there are actually images in the response.
+        if ((extension == '.xml') and ("<images/>" not in resp.text) or
+            (extension != '.xml') and resp.json()['images']):
+            assert img_state in resp.text
+
 
 @pytest.mark.parametrize("extension", ['', '.json', '.xml'])
 @pytest.mark.parametrize("category", ['images', 'servers'])
 @pytest.mark.parametrize("provider", ['alibaba', 'amazon', 'google', 'oracle']) #microsoft will be covered in another test
 def test_get_provider_region_category(baseurl, provider, category, extension):
-        regions_resp = requests.get(baseurl + '/v1/' + provider + '/regions', verify=False)
-        regions = json.loads(regions_resp.content)['regions']
-        if len(regions) != 0:
-            # Pick the first region.. no need to iterate with all the regions
-            region = regions[0]
-            url = baseurl + '/v1/' + provider + '/' + region[
-                'name'] + '/' + category + extension
-            resp = requests.get(url, verify=False)
-            expected_status_code = 200
-            validate(resp, expected_status_code, extension)
-            if extension != '.xml' and len(json.loads(resp.content)[category]) != 0:
-                assert region['name'] in resp.text
-            assert category in resp.text
+    regions = _get_provider_regions_list(baseurl, provider)
+
+    if len(regions) != 0:
+        # Pick the first region.. no need to iterate with all the regions
+        region = regions[0]
+        url = baseurl + '/v1/' + provider + '/' + region + '/' + category + extension
+        resp = requests.get(url, verify=False)
+        expected_status_code = 200
+        validate(resp, expected_status_code, extension)
+        if extension != '.xml' and len(json.loads(resp.content)[category]) != 0:
+            assert region in resp.text
+        assert category in resp.text
 
 @pytest.mark.parametrize("extension", ['', '.json', '.xml'])
 @pytest.mark.parametrize("category", ['images', 'servers'])
@@ -202,6 +319,81 @@ def test_get_psql_server_version(baseurl, extension):
     expected_status_code = 200
     validate(resp, expected_status_code, extension)
 
+
+@pytest.mark.parametrize("date", ['20191231', '20201231', '20211231', '20221231'])
+@pytest.mark.parametrize("extension", ['', '.json', '.xml'])
+@pytest.mark.parametrize("provider", ['alibaba', 'amazon', 'google', 'microsoft', 'oracle'])
+def test_get_provider_images_deletedby(baseurl, provider, date, extension):
+    # include an empty region entry to test the non-regioned API as well
+    regions = [''] + _get_provider_regions_list(baseurl, provider)
+
+    for region in regions:
+        # construct request URL optionally including region if not empty
+        url = baseurl + '/v1/' + provider
+        if region:
+            url += '/' + region
+        url += '/images/deletedby/' + date + extension
+
+        resp = requests.get(url, verify=False)
+        expected_status_code = 200
+        validate(resp, expected_status_code, extension)
+        assert "images" in resp.text
+        # only check for the deprecated on field in the resp.text if
+        # there are actually images in the response.
+        if ((extension == '.xml') and ("<images/>" not in resp.text) or
+            (extension != '.xml') and resp.json()['images']):
+            assert 'deprecatedon' in resp.text
+
+
+@pytest.mark.parametrize("extension", ['', '.json', '.xml'])
+@pytest.mark.parametrize("provider", ['alibaba', 'amazon', 'google', 'microsoft', 'oracle'])
+def test_get_provider_images_deletiondate(baseurl, provider, extension):
+    img_states = _get_image_states_list(baseurl)
+
+    # include an empty region entry to test the non-regioned API as well
+    regions = [''] + _get_provider_regions_list(baseurl, provider)
+
+    for region in regions:
+        print(f"region: {region!r}")
+        for state in img_states:
+            print(f"state: {state!r}")
+            images = _get_provider_region_images_in_state(baseurl, provider, region, state)
+
+            # If no images were found for providere/region combo
+            if not images:
+                continue
+
+            # Just test the first image, not all images
+            image = images[0]
+            print(f"image: {image!r}")
+
+            # construct request URL optionally including region if not empty
+            url = baseurl + '/v1/' + provider
+            if region:
+                url += '/' + region
+            url += '/images/deletiondate/' + image + extension
+            print(f"url: {url!r}")
+
+            resp = requests.get(url, verify=False)
+            expected_status_code = 200
+            validate(resp, expected_status_code, extension)
+            assert "deletiondate" in resp.text
+
+            if state in ['deprecated', 'deleted']:
+                if (extension == '.xml'):
+                    assert "<deletiondate>" in resp.text
+                    assert "</deletiondate>" in resp.text
+                else:
+                    assert resp.json()['deletiondate'] != ""
+            elif region:
+                # skip global level check as sometimes images can be in more
+                # than one state globally.
+                if (extension == '.xml'):
+                    assert "<deletiondate/>" in resp.text
+                else:
+                    assert resp.json()['deletiondate'] == ""
+
+
 #negative tests
 @pytest.mark.parametrize("extension", ['', '.json', '.xml'])
 @pytest.mark.parametrize("category", ['images', 'servers'])
@@ -233,12 +425,11 @@ def test_get_provider_images_for_invalid_image_state(baseurl, provider, extensio
 @pytest.mark.parametrize("extension", ['', '.json', '.xml'])
 @pytest.mark.parametrize("provider", ['alibaba', 'amazon', 'google', 'microsoft', 'oracle'])
 def test_get_provider_servers_for_region_and_invalid_server_type(baseurl, provider, extension):
-    regions_resp = requests.get(baseurl + '/v1/' + provider + '/regions', verify=False)
-    regions = json.loads(regions_resp.content)['regions']
+    regions = _get_provider_regions_list(baseurl, provider)
     invalid_server_type = 'foo'
     if len(regions) != 0:
         region = regions[0] #pick the first region
-        url = baseurl + '/v1/' + provider + '/' + region ['name'] + '/servers/' + invalid_server_type +  extension
+        url = baseurl + '/v1/' + provider + '/' + region + '/servers/' + invalid_server_type +  extension
         resp = requests.get(url, verify=False)
         expected_status_code = 404
         validate(resp, expected_status_code, extension)
@@ -247,12 +438,11 @@ def test_get_provider_servers_for_region_and_invalid_server_type(baseurl, provid
 @pytest.mark.parametrize("provider", ['alibaba', 'amazon', 'google', 'microsoft', 'oracle'])
 def test_get_provider_images_for_region_and_invalid_image_state(baseurl, provider, extension):
     invalid_image_state='foo'
-    regions_resp = requests.get(baseurl + '/v1/' + provider + '/regions', verify=False)
-    regions = json.loads(regions_resp.content)['regions']
+    regions = _get_provider_regions_list(baseurl, provider)
     if len(regions) != 0:
         region = regions[0] #pick the first region
-        url = baseurl + '/v1/' + provider + '/' + region[
-            'name'] + '/images/' + invalid_image_state + extension
+        url = (baseurl + '/v1/' + provider + '/' + region
+               + '/images/' + invalid_image_state + extension)
         resp = requests.get(url, verify=False)
         expected_status_code = 404
         validate(resp, expected_status_code, extension)
@@ -283,6 +473,52 @@ def test_unsupported_version(baseurl, extension):
     resp = requests.get(url, verify=False)
     expected_status_code = 400
     validate(resp, expected_status_code, extension)
+
+
+def test_get_images_deletedby_no_date(baseurl):
+    provider = 'amazon'
+    date = ''
+    extension = ''
+    expected_status_code = 400
+
+    url = baseurl + '/v1/' + provider + '/images/deletedby/' + date + extension
+    resp = requests.get(url, verify=False)
+    validate(resp, expected_status_code, extension)
+
+
+@pytest.mark.parametrize("date", ['1', '11', '111', '1111', '11111', '111111',
+                                  '1111111', '99999999', '20230431', '200231231'])
+def test_get_images_deletedby_invalid_date(baseurl, date):
+    provider = 'amazon'
+    extension = ''
+    expected_status_code = 404
+
+    url = baseurl + '/v1/' + provider + '/images/deletedby/' + date + extension
+    resp = requests.get(url, verify=False)
+    validate(resp, expected_status_code, extension)
+
+
+def test_get_images_deletiondate_no_image(baseurl):
+    provider = 'amazon'
+    image = ''
+    extension = ''
+    expected_status_code = 400
+
+    url = baseurl + '/v1/' + provider + '/images/deletiondate/' + image + extension
+    resp = requests.get(url, verify=False)
+    validate(resp, expected_status_code, extension)
+
+
+def test_get_images_deletiondate_invalid_image(baseurl):
+    provider = 'amazon'
+    image = 'foo'
+    extension = ''
+    expected_status_code = 404
+
+    url = baseurl + '/v1/' + provider + '/images/deletiondate/' + image + extension
+    resp = requests.get(url, verify=False)
+    validate(resp, expected_status_code, extension)
+
 
 def validate(resp, expected_status, extension):
     assert resp.status_code == expected_status  # actual_status == expected_status
