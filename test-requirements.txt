@@ -7,3 +7,4 @@ lxml
 requests
 pytest-stress
 locust
+python-dateutil

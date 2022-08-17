@@ -15,10 +15,22 @@
 # To contact SUSE about this file by physical or electronic mail,
 # you may find current contact information at www.suse.com
 
+from collections import namedtuple
 import glob
 import os
+import datetime
 
 from lxml import etree
+
+from pint_server.models import ImageState
+
+
+DATE_FORMAT = '%Y%m%d'
+
+
+def get_datetime_date(date):
+    return datetime.datetime.strptime(date, DATE_FORMAT)
+
 
 def images(provider):
     base_path = os.path.dirname(os.path.abspath(__file__))
@@ -148,3 +160,164 @@ expected_json_regions['microsoft'] = {"regions":[{'name': 'West US'},{'name': 'S
 
 mocked_return_value_regions['oracle'] = []
 expected_json_regions['oracle'] = {"regions":[]}
+
+#
+# /v1/<provider>/images/deletiondate/<image> testing
+#
+
+MockDeletionDateImage = namedtuple("MockDeletionDateImage",
+                                   " ".join(["state",
+                                             "deprecatedon",
+                                             "deletedon"]))
+
+# Need to emulate the list of images returned by a DB query,
+# supporting iteration and a count method.
+class MockDBImagesQuery:
+    def __init__(self, images=None):
+        if images is None:
+            images = []
+        self.images = images
+
+    def __iter__(self):
+        return iter(self.images)
+
+    def count(self):
+        return len(self.images)
+
+    def __str__(self):
+        return "".join([
+            "[",
+            ", ".join([str(i) for i in self.images]),
+            "]"
+        ])
+
+    def __repr__(self):
+        return "".join([
+            f"{self.__class__.__name__}(images=[",
+            ", ".join([str(i) for i in self.images]),
+            "])"
+        ])
+
+
+# Create a table of mocked images lists, one per test image
+# name, that can be used as the mocked return value for the
+# pint_server.app.query_image_in_provider_region() call
+_deprecatedon_date = get_datetime_date('20220101')
+_deprecatedon_later_date = get_datetime_date('20220201')
+_deletedon_date = get_datetime_date('20220701')
+_deletedon_later_date = get_datetime_date('20220801')
+_mock_deletiondate_active_image = MockDeletionDateImage(
+    state=ImageState.active,
+    deprecatedon='',
+    deletedon='',
+)
+_mock_deletiondate_inactive_image = MockDeletionDateImage(
+    state=ImageState.inactive,
+    deprecatedon='',
+    deletedon='',
+)
+_mock_deletiondate_deprecated_image = MockDeletionDateImage(
+    state=ImageState.deprecated,
+    deprecatedon=_deprecatedon_date,
+    deletedon='',
+)
+_mock_deletiondate_deprecated_later_image = MockDeletionDateImage(
+    state=ImageState.deprecated,
+    deprecatedon=_deprecatedon_later_date,
+    deletedon='',
+)
+_mock_deletiondate_deleted_image = MockDeletionDateImage(
+    state=ImageState.deleted,
+    deprecatedon=_deprecatedon_date,
+    deletedon=_deletedon_date,
+)
+_mock_deletiondate_deleted_later_image = MockDeletionDateImage(
+    state=ImageState.deleted,
+    deprecatedon=_deprecatedon_date,
+    deletedon=_deletedon_later_date,
+)
+mocked_deletiondate_images = {
+    # test images in the active state
+    "image1": MockDBImagesQuery(images=[
+        _mock_deletiondate_active_image,
+    ]),
+    # test images in the inactive state
+    "image2": MockDBImagesQuery(images=[
+        _mock_deletiondate_inactive_image,
+    ]),
+    # test images in the deprecated state
+    "image3": MockDBImagesQuery(images=[
+        _mock_deletiondate_deprecated_image,
+    ]),
+    # test images in the deleted state
+    "image4": MockDBImagesQuery(images=[
+        _mock_deletiondate_deleted_image,
+    ]),
+    # test images in mixed active and deprecated states
+    "image5": MockDBImagesQuery(images=[
+        _mock_deletiondate_active_image,
+        _mock_deletiondate_deprecated_image,
+    ]),
+    # test images in mixed inactive and deleted states
+    "image6": MockDBImagesQuery(images=[
+        _mock_deletiondate_inactive_image,
+        _mock_deletiondate_deleted_image,
+    ]),
+    # test images in mixed active and deprecated states and
+    # multiple deprecatedon dates
+    "image7": MockDBImagesQuery(images=[
+        _mock_deletiondate_active_image,
+        _mock_deletiondate_deprecated_image,
+        _mock_deletiondate_deprecated_later_image,
+    ]),
+    # test images in mixed inactive and deleted states and
+    # multiple deletedon dates
+    "image8": MockDBImagesQuery(images=[
+        _mock_deletiondate_inactive_image,
+        _mock_deletiondate_deleted_image,
+        _mock_deletiondate_deleted_later_image,
+    ]),
+    # test images in all states
+    "image9": MockDBImagesQuery(images=[
+        _mock_deletiondate_active_image,
+        _mock_deletiondate_inactive_image,
+        _mock_deletiondate_deprecated_image,
+        _mock_deletiondate_deleted_later_image,
+    ]),
+}
+
+# expected responses for providers with 6 months deletion policy
+_mocked_6months_deletiondates = {
+        'image1': '',
+        'image2': '',
+        'image3': '20220701',
+        'image4': '20220701',
+        'image5': '20220701',
+        'image6': '20220701',
+        'image7': '20220701',
+        'image8': '20220701',
+        'image9': '20220801',
+}
+
+# expected responses for providers with 2 years deletion policy
+_mocked_2years_deletiondates = {
+        'image1': '',
+        'image2': '',
+        'image3': '20240101',
+        'image4': '20220701',
+        'image5': '20240101',
+        'image6': '20220701',
+        'image7': '20240101',
+        'image8': '20220701',
+        'image9': '20220801',
+}
+
+# provider specific expected deletiondate responses for above
+# list of mock images.
+mocked_expected_deletiondate = {
+    'alibaba': _mocked_6months_deletiondates,
+    'amazon': _mocked_2years_deletiondates,
+    'google': _mocked_6months_deletiondates,
+    'microsoft': _mocked_6months_deletiondates,
+    'oracle': _mocked_6months_deletiondates,
+}
