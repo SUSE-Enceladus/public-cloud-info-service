@@ -691,7 +691,11 @@ def trim_images_payload(images):
 
 
 def get_provider_images(provider):
-    images = PROVIDER_IMAGES_MODEL_MAP[provider].query.order_by(
+    images = PROVIDER_IMAGES_MODEL_MAP[provider].query.filter(
+            PROVIDER_IMAGES_MODEL_MAP[provider].state.in_([
+                ImageState.active,
+                ImageState.inactive,
+                ImageState.deprecated])).order_by(
         desc(PROVIDER_IMAGES_MODEL_MAP[provider].publishedon)).all()
     return trim_images_payload(
                 formatted_provider_images(provider, images))
