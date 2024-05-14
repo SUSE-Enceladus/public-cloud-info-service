@@ -453,7 +453,8 @@ def get_provider_images_for_region_and_state(provider, region, state):
 def get_provider_images_for_state(provider, state):
     images = PROVIDER_IMAGES_MODEL_MAP[provider].query.filter(
         PROVIDER_IMAGES_MODEL_MAP[provider].state == state)
-    return formatted_provider_images(provider, images)
+    return trim_images_payload(
+                formatted_provider_images(provider, images))
 
 
 def _get_azure_deprecatedby_images_for_region(deprecatedby, region):
