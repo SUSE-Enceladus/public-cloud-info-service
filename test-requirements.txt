@@ -1,10 +1,12 @@
-pytest
-mock
-Flask
-Flask-CORS
-Flask-SQLAlchemy
-lxml
-requests
-pytest-stress
-locust
-python-dateutil
+# NOTE: we pin the version to the lowest common denominator, that it
+# is the highest version that Python 3.6.15 currently supports.
+Flask==2.0.3
+Flask-Cors==4.0.1
+Flask-SQLAlchemy==2.5.1
+locust==2.8.6
+lxml==5.2.2
+mock==5.1.0
+pytest==7.0.1
+pytest-stress==1.0.1
+python-dateutil==2.9.0.post0
+requests==2.27.1
