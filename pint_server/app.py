@@ -32,6 +32,7 @@ from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import (
     desc,
+    asc,
     or_,
     text)
 from sqlalchemy.exc import DataError
@@ -408,17 +409,19 @@ def _get_azure_environment_name_for_region(region):
 
     return environment.environment
 
-def _get_azure_images_for_region_state(region, state=None):
+def _get_azure_images_for_region_state(provider, region, state=None):
     environment_name = _get_azure_environment_name_for_region(region)
 
     # query all images with matching environment and state (if specified)
     if state is None:
         images = MicrosoftImagesModel.query.filter(
-            MicrosoftImagesModel.environment == environment_name)
+            MicrosoftImagesModel.environment == environment_name).order_by(
+            desc(PROVIDER_IMAGES_MODEL_MAP[provider].publishedon)).all()
     else:
         images = MicrosoftImagesModel.query.filter(
             MicrosoftImagesModel.environment == environment_name,
-            MicrosoftImagesModel.state == state)
+            MicrosoftImagesModel.state == state).order_by(
+            desc(PROVIDER_IMAGES_MODEL_MAP[provider].publishedon)).all()
 
     return images
 
@@ -426,15 +429,17 @@ def _get_azure_images_for_region_state(region, state=None):
 def query_provider_images_for_region_and_state(provider, region, state):
 
     if provider == 'microsoft':
-        images = _get_azure_images_for_region_state(region, state)
+        images = _get_azure_images_for_region_state(provider, region, state)
 
     elif (hasattr(PROVIDER_IMAGES_MODEL_MAP[provider], 'region')):
         images = PROVIDER_IMAGES_MODEL_MAP[provider].query.filter(
             PROVIDER_IMAGES_MODEL_MAP[provider].region == region,
-            PROVIDER_IMAGES_MODEL_MAP[provider].state == state)
+            PROVIDER_IMAGES_MODEL_MAP[provider].state == state).order_by(
+            desc(PROVIDER_IMAGES_MODEL_MAP[provider].publishedon)).all()
     else:
         images = PROVIDER_IMAGES_MODEL_MAP[provider].query.filter(
-            PROVIDER_IMAGES_MODEL_MAP[provider].state == state)
+            PROVIDER_IMAGES_MODEL_MAP[provider].state == state).order_by(
+            desc(PROVIDER_IMAGES_MODEL_MAP[provider].publishedon)).all()
 
     return images
 
@@ -452,12 +457,13 @@ def get_provider_images_for_region_and_state(provider, region, state):
 
 def get_provider_images_for_state(provider, state):
     images = PROVIDER_IMAGES_MODEL_MAP[provider].query.filter(
-        PROVIDER_IMAGES_MODEL_MAP[provider].state == state)
+        PROVIDER_IMAGES_MODEL_MAP[provider].state == state).order_by(
+        desc(PROVIDER_IMAGES_MODEL_MAP[provider].publishedon)).all()
     return trim_images_payload(
                 formatted_provider_images(provider, images))
 
 
-def _get_azure_deprecatedby_images_for_region(deprecatedby, region):
+def _get_azure_deprecatedby_images_for_region(provider, deprecatedby, region):
     environment_name = _get_azure_environment_name_for_region(region)
 
     # query all images with matching environment, in the deprecated
@@ -466,7 +472,8 @@ def _get_azure_deprecatedby_images_for_region(deprecatedby, region):
         MicrosoftImagesModel.environment == environment_name,
         MicrosoftImagesModel.state == ImageState.deprecated,
         MicrosoftImagesModel.deprecatedon < deprecatedby,
-    )
+    ).order_by(desc(PROVIDER_IMAGES_MODEL_MAP[provider].publishedon)).all()
+
 
     return images
 
@@ -486,7 +493,8 @@ def query_deletedby_images_in_provider_region(
     if region:
         # microsoft needs special handling for region queries
         if provider == 'microsoft':
-            images = _get_azure_deprecatedby_images_for_region(deprecatedby,
+            images = _get_azure_deprecatedby_images_for_region(provider,
+                                                               deprecatedby,
                                                                region)
         # if provider images table has region column retrieve matching images
         elif hasattr(PROVIDER_IMAGES_MODEL_MAP[provider], 'region'):
@@ -494,7 +502,7 @@ def query_deletedby_images_in_provider_region(
                 PROVIDER_IMAGES_MODEL_MAP[provider].region == region,
                 PROVIDER_IMAGES_MODEL_MAP[provider].state == ImageState.deprecated,
                 PROVIDER_IMAGES_MODEL_MAP[provider].deprecatedon < deprecatedby,
-            )
+            ).order_by(asc(PROVIDER_IMAGES_MODEL_MAP[provider].deletedon)).all()
 
     # if region was not specified, or provider wasn't microsoft or
     # provider images table doesn't have a region column
@@ -502,7 +510,7 @@ def query_deletedby_images_in_provider_region(
         images = PROVIDER_IMAGES_MODEL_MAP[provider].query.filter(
             PROVIDER_IMAGES_MODEL_MAP[provider].state == ImageState.deprecated,
             PROVIDER_IMAGES_MODEL_MAP[provider].deprecatedon < deprecatedby,
-        )
+        ).order_by(desc(PROVIDER_IMAGES_MODEL_MAP[provider].publishedon)).all()
 
     return images
 
@@ -519,14 +527,15 @@ def get_provider_images_to_be_deletedby(deletedby, provider, region=None):
                                      extra_attrs=extra_attrs)
 
 
-def _query_image_in_azure_region(image_name, region):
+def _query_image_in_azure_region(image_name, provider, region):
     # lookup environment for given region, assuming unique per region
     environment_name = _get_azure_environment_name_for_region(region)
 
     # retrieve matching images for region
     images = MicrosoftImagesModel.query.filter(
         MicrosoftImagesModel.environment == environment_name,
-        MicrosoftImagesModel.name == image_name)
+        MicrosoftImagesModel.name == image_name).order_by(
+        desc(PROVIDER_IMAGES_MODEL_MAP[provider].publishedon)).all()
 
     return images
 
@@ -537,18 +546,21 @@ def query_image_in_provider_region(image_name, provider, region=None):
     if region:
         # microsoft needs special handling for region queries
         if provider == 'microsoft':
-            images = _query_image_in_azure_region(image_name, region)
+            images = _query_image_in_azure_region(image_name, provider, region)
         # if provider images table has region column retrieve matching images
         elif (hasattr(PROVIDER_IMAGES_MODEL_MAP[provider], 'region')):
             images = PROVIDER_IMAGES_MODEL_MAP[provider].query.filter(
                 PROVIDER_IMAGES_MODEL_MAP[provider].region == region,
-                PROVIDER_IMAGES_MODEL_MAP[provider].name == image_name)
+                PROVIDER_IMAGES_MODEL_MAP[provider].name == image_name).order_by(
+                desc(PROVIDER_IMAGES_MODEL_MAP[provider].publishedon)).all()
 
     # if region was not specified, or provider wasn't microsoft or
     # provider images table doesn't have region column
     if images is None:
         images = PROVIDER_IMAGES_MODEL_MAP[provider].query.filter(
-            PROVIDER_IMAGES_MODEL_MAP[provider].name == image_name)
+            PROVIDER_IMAGES_MODEL_MAP[provider].name == image_name).order_by(
+            desc(PROVIDER_IMAGES_MODEL_MAP[provider].publishedon)).all()
+
 
     return images
 
@@ -558,7 +570,7 @@ def get_image_deletiondate_in_provider(image, provider, region=None):
     images = query_image_in_provider_region(image, provider, region)
 
     # if no images were found then the provided image name is invalid
-    if not images.count():
+    if len(images) == 0:
         abort(Response('', status=404))
 
     # depending on provider there may be multiple images all of
@@ -650,12 +662,13 @@ def get_provider_images_for_region(provider, region):
     images = []
     extra_attrs = {}
     if provider == 'microsoft':
-        images = _get_azure_images_for_region_state(region, None)
+        images = _get_azure_images_for_region_state(provider, region, None)
         extra_attrs['region'] = region
 
     elif hasattr(PROVIDER_IMAGES_MODEL_MAP[provider], 'region'):
         images = PROVIDER_IMAGES_MODEL_MAP[provider].query.filter(
-            PROVIDER_IMAGES_MODEL_MAP[provider].region == region)
+            PROVIDER_IMAGES_MODEL_MAP[provider].region == region).order_by(
+            desc(PROVIDER_IMAGES_MODEL_MAP[provider].publishedon)).all()
     return formatted_provider_images(provider, images, extra_attrs)
 
 

@@ -184,6 +184,9 @@ class MockDBImagesQuery:
     def count(self):
         return len(self.images)
 
+    def __len__(self):
+        return len(self.images)
+
     def __str__(self):
         return "".join([
             "[",
