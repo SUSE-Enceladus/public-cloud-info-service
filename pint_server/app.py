@@ -17,6 +17,7 @@
 
 import datetime
 import math
+import os
 import re
 from collections import namedtuple
 from dateutil.relativedelta import relativedelta
@@ -133,8 +134,10 @@ PROVIDER_SERVERS_EXCLUDE_ATTRS = {
 SUPPORTED_CATEGORIES = ['images', 'servers']
 
 # NOTE: AWS lambda payload size cannot exceed 6MB. We are setting the
-# maximum payload size to 5.5MB to account for the HTTP protocol overheads
-MAX_PAYLOAD_SIZE = 5500000
+# default maximum payload size to 5.0MB to account for the HTTP protocol
+# overheads. However, this value can be overwritten with the
+# "MAX_PAYLOAD_SIZE" environment variable.
+DEFAULT_MAX_PAYLOAD_SIZE = 5000000
 
 # Provider specific deletion relative time deltas
 DELETION_RELATIVE_DELTA_MAP = {
@@ -678,18 +681,24 @@ def get_provider_servers(provider):
         servers = PROVIDER_SERVERS_MODEL_MAP[provider].query.all()
     return formatted_provider_servers(provider, servers)
 
+def get_max_payload_size():
+    if 'MAX_PAYLOAD_SIZE' in os.environ:
+        return int(os.environ.get('MAX_PAYLOAD_SIZE'))
+    else:
+        return DEFAULT_MAX_PAYLOAD_SIZE
 
 def trim_images_payload(images):
     payload_size = jsonify(images=images).content_length
+    max_payload_size = get_max_payload_size()
 
-    if payload_size >  MAX_PAYLOAD_SIZE:
+    if payload_size > max_payload_size:
         # NOTE: assuming the size of the entries are evenly distributed, we
         # determine the percentage of entries to trim from the end of the list,
         # as the list is sorted in decending order by publishedon date, by
         # calculating the percentage over the maximum payload size. Then
         # trim the same percentage off the list, rounding up to be safe.
         trim_size  = math.ceil(
-            ((payload_size - MAX_PAYLOAD_SIZE) / payload_size) * len(images))
+            ((payload_size - max_payload_size) / payload_size) * len(images))
         last_publishedon = images[-trim_size]['publishedon']
         images = images[:-trim_size]
 
