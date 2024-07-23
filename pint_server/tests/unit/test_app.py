@@ -17,8 +17,10 @@
 
 import json
 import mock
+import os
 import pytest
 
+import pint_server
 from pint_server.tests.unit import mock_pint_data
 
 def test_root_request(client):
@@ -361,6 +363,15 @@ def test_get_provider_regions_image_deletiondate(client, provider, image, extens
                             assert expected_deletiondate in str(rv.data)
                     else:
                         assert expected_deletiondate == rv.json['deletiondate']
+
+
+def test_get_max_payload_size_default_value(client):
+    assert pint_server.app.get_max_payload_size() == pint_server.app.DEFAULT_MAX_PAYLOAD_SIZE
+
+
+@mock.patch.dict(os.environ, {"MAX_PAYLOAD_SIZE": "100"})
+def test_get_max_payload_size_default_override(client):
+    assert pint_server.app.get_max_payload_size() == 100
 
 
 def validate(rv, expected_status, extension):
