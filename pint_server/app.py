@@ -42,8 +42,8 @@ from xml.dom import minidom
 import xml.etree.ElementTree as ET
 
 import pint_server
-from pint_server.database import init_db, get_psql_server_version
-from pint_server.models import (ImageState, AmazonImagesModel,
+from pint_modesl.database import init_db, get_psql_server_version
+from pint_models.models import (ImageState, AmazonImagesModel,
                                 OracleImagesModel, AlibabaImagesModel,
                                 MicrosoftImagesModel, GoogleImagesModel,
                                 AmazonServersModel, MicrosoftServersModel,

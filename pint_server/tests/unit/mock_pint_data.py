@@ -22,7 +22,7 @@ import datetime
 
 from lxml import etree
 
-from pint_server.models import ImageState
+from pint_models.models import ImageState
 
 
 DATE_FORMAT = '%Y%m%d'
