@@ -18,7 +18,7 @@
 import mock
 import os
 import pytest
-from pint_server import database
+from pint_models import database
 
 database.init_db = mock.MagicMock()
 
