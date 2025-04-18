@@ -25,7 +25,7 @@ SRCDIR=$(dirname $CURRENTDIR)
 
 if [[ "$VIRTUAL_ENV" == "" ]] ; then
     if [[ ! -f "${SRCDIR}/${VENV_NAME}/bin/activate" ]] ; then
-        virtualenv $SRCDIR/$VENV_NAME --python=python3
+        virtualenv $SRCDIR/$VENV_NAME --python=python3.11
     fi
     . $SRCDIR/$VENV_NAME/bin/activate
     pip install -q --upgrade pip wheel setuptools
