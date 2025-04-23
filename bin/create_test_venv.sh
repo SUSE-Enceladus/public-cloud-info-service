@@ -28,5 +28,6 @@ if [[ "$VIRTUAL_ENV" == "" ]] ; then
         virtualenv $SRCDIR/$VENV_NAME --python=python3
     fi
     . $SRCDIR/$VENV_NAME/bin/activate
+    pip install -q --upgrade pip wheel setuptools
     pip install -q -r $SRCDIR/test-requirements.txt
 fi

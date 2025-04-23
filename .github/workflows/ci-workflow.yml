@@ -5,24 +5,68 @@ on:
   - pull_request 
 
 jobs:
-  build:
 
+  # test for versions that require an older distro
+  test-legacy-versions:
+
+    # will be skipped in GitHub infrastructure, but can be run locally
+    # using nektos/act if an appropriate image is available and the
+    # RUNNING_LOCALLY variable is defined via a --var option or in a
+    # var file via the --var-file option.
+    if: vars.RUNNING_LOCALLY || false
     runs-on: ubuntu-20.04
     strategy:
       matrix:
-        python-version: [3.6.15, 3.7, 3.8]
+        python-version:
+          - 3.6.15
+          - 3.7
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
+          [ "${USER}" = "root" ] || PATH=${HOME}/.local/bin:${PATH}
+          python -m pip install --upgrade pip wheel setuptools
           pip install -r requirements.txt
       - name: Test with pytest
         run: |
+          [ "${USER}" = "root" ] || PATH=${HOME}/.local/bin:${PATH}
+          pip install -r test-requirements.txt
+          pytest pint_server/tests/unit/test_app.py
+
+
+  # test for versions supported by modern distro
+  test:
+
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version:
+          - 3.8
+          - 3.9
+          - "3.10"
+          - 3.11
+          # existing requirements don't work for Python 3.12+
+          #- 3.12
+          #- 3.13
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          [ "${USER}" = "root" ] || PATH=${HOME}/.local/bin:${PATH}
+          python -m pip install --upgrade pip wheel setuptools
+          pip install -r requirements.txt
+      - name: Test with pytest
+        run: |
+          [ "${USER}" = "root" ] || PATH=${HOME}/.local/bin:${PATH}
           pip install -r test-requirements.txt
           pytest pint_server/tests/unit/test_app.py
