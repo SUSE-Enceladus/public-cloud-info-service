@@ -7,5 +7,5 @@ COPY serverless_app.py /var/task/
 WORKDIR /var/task
 
 # NOTE(gyee): we must have both ENTRYPOINT and CMD defined
-ENTRYPOINT [ "/usr/bin/python3", "-m", "awslambdaric" ]
+ENTRYPOINT [ "/usr/bin/python3.11", "-m", "awslambdaric" ]
 CMD [ "serverless_app.handler" ]

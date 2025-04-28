@@ -1,4 +1,4 @@
-FROM public.ecr.aws/lambda/python:3.9
+FROM public.ecr.aws/lambda/python:3.11
 
 COPY serverless_app.py requirements.txt ./
 RUN mkdir -p ./pint_server
@@ -11,7 +11,7 @@ ADD https://s3.amazonaws.com/rds-downloads/rds-combined-ca-bundle.pem ./
 
 RUN chmod 644 /var/task/rds-combined-ca-bundle.pem
 
-RUN python3.9 -m pip install -r requirements.txt -t .
+RUN python3.11 -m pip install -r requirements.txt -t .
 
 # Command can be overwritten by providing a different command in the template directly.
 CMD ["serverless_app.handler"]

@@ -18,7 +18,7 @@ database with the up-to-date Pint Server schema and data.
 1. follow the instructions to install an instance of PostgreSQL from your
    favorite vendor
 2. clone the *pint-data* repo
-3. OPTIONAL: create the Python 3.6 development virtual environment. Skip this
+3. OPTIONAL: create the Python 3.11 development virtual environment. Skip this
    step if you are using an existing environment.
 
    .. code-block::
@@ -86,7 +86,7 @@ Runing Standalone Flask Application
 
 To run the standalone Flask application:
 
-1. create the Python 3.6 development virtual environment
+1. create the Python 3.11 development virtual environment
 
    .. code-block::
 
@@ -128,7 +128,7 @@ To run the serverless application via SAM CLI:
      sudo pip install aws-sam-cli
 
 2. build the Pint Server Lambda function container image with *make*. By
-   default, the container image is based on the SLES 15.2 base image.
+   default, the container image is based on the SLES 15.6 base image.
 
    .. code-block::
 
@@ -285,7 +285,7 @@ see https://alembic.sqlalchemy.org/en/latest/tutorial.html.
 
 Here's an example of a normal workflow for performing schema update.
 
-1. create the Python 3.6 development virtual environment
+1. create the Python 3.11 development virtual environment
 
    .. code-block::
 

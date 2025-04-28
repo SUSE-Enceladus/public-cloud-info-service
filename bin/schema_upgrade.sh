@@ -30,5 +30,5 @@ if [[ "$VIRTUAL_ENV" == "" ]] ; then
   exit 1
 fi
 
-python3 ${ProjectRootDir}/pint_server/schema_upgrade.py --repository $RepositoryDir $@
+python3.11 ${ProjectRootDir}/pint_server/schema_upgrade.py --repository $RepositoryDir $@
 

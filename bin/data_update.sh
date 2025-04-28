@@ -29,4 +29,4 @@ if [[ "$VIRTUAL_ENV" == "" ]] ; then
   exit 1
 fi
 
-python3 ${ProjectRootDir}/pint_server/data_update.py $@
+python3.11 ${ProjectRootDir}/pint_server/data_update.py $@
