@@ -1,0 +1,77 @@
+-------------------------------------------------------------------
+Tue Apr 29 18:59:03 UTC 2025 - Charu Jain <cjain@suse.com>
+
+- Update to 2.0.16
+  - Upgrade to Python 3.11
+
+-------------------------------------------------------------------
+Tue Jul 23 22:29:14 UTC 2024 - Guang Yee <gyee@suse.com>
+
+- Update to 2.0.15
+  - Make MAX_PAYLOAD_SIZE configurable, but default to 5MB to account
+    for entries size consistencies and HTTP overhead. 
+
+-------------------------------------------------------------------
+Mon Jul 22 19:58:53 UTC 2024 - Guang Yee <gyee@suse.com>
+
+- Update to 2.0.14
+  - Sort the images lookup result by publishedon date before
+    truncating it so that we only truncate the older images instead
+    of doing random truncating.
+
+-------------------------------------------------------------------
+Wed May 15 23:22:48 UTC 2024 - Guang Yee <gyee@suse.com>
+
+- Update to 2.0.13
+  - Truncate image for list images for a provider and a given state
+
+-------------------------------------------------------------------
+Thu Aug 18 21:30:38 UTC 2022 - Fergal Mc Carthy <fmccarthy@suse.com>
+
+- Update to 2.0.12.
+- Add Requires and BuildRequires for python3-dateutil
+
+-------------------------------------------------------------------
+Mon Aug  1 17:18:57 UTC 2022 - Guang Yee <gyee@suse.com>
+
+- Update to 2.0.11. NOTE: we didn't have a 2.0.10 release. 
+
+-------------------------------------------------------------------
+Fri Dec  3 17:08:13 UTC 2021 - Fergal Mc Carthy <fmccarthy@suse.com>
+
+- Update to 2.0.9.
+
+-------------------------------------------------------------------
+Wed Dec  1 21:16:01 UTC 2021 - Fergal Mc Carthy <fmccarthy@suse.com>
+
+- Update to 2.0.8.
+
+-------------------------------------------------------------------
+Mon Nov  8 18:08:26 UTC 2021 - Fergal Mc Carthy <fmccarthy@suse.com>
+
+- Update to 2.0.6.
+
+-------------------------------------------------------------------
+Tue Jun 22 22:03:56 UTC 2021 - Guang Yee <gyee@suse.com>
+
+- Update to 2.0.3.
+
+-------------------------------------------------------------------
+Fri Jun 18 23:27:32 UTC 2021 - Guang Yee <gyee@suse.com>
+
+- Update to 2.0.2.
+
+-------------------------------------------------------------------
+Thu Jun  3 17:16:26 UTC 2021 - Guang Yee <gyee@suse.com>
+
+- Update to 2.0.1.
+
+-------------------------------------------------------------------
+Thu Apr 29 21:57:08 UTC 2021 - Guang Yee <gyee@suse.com>
+
+- Use tag for revision on _service. 
+
+-------------------------------------------------------------------
+Thu Apr 29 21:41:10 UTC 2021 - Guang Yee <gyee@suse.com>
+
+- Initial version. 

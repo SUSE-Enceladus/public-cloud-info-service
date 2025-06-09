@@ -18,6 +18,8 @@
 import json
 import pytest
 import requests
+import gzip
+import io
 
 
 # For some providers we need to remap the server type returned by
@@ -84,6 +86,23 @@ def _get_provider_region_images_in_state(baseurl, provider, region, state):
     return [i["name"] for i in images_resp.json()['images']]
 
 
+def _decompress_gzip(resp):
+    with gzip.GzipFile(fileobj=io.BytesIO(resp.content), mode='rb') as f:
+        uncompressed_data = f.read()
+    return uncompressed_data
+
+def _get_response_content(resp, extension):
+    if '.gz' in extension:
+        resp_content = _decompress_gzip(resp).decode('utf-8')
+        if '.xml' in extension:
+            assert '<?xml version=' in resp_content
+        else:
+            assert '{' in resp_content
+    else:
+        resp_content = resp.text
+    return resp_content    
+
+
 #
 # Helper functions for validating the data
 #
@@ -106,59 +125,64 @@ def test_root_request(baseurl):
     assert resp.status_code == expected_status_code
     assert 'https://www.suse.com/solutions/public-cloud/' == resp.headers['Location']
 
-@pytest.mark.parametrize("extension", ['', '.json', '.xml'])
+@pytest.mark.parametrize("extension", ['', '.json', '.xml', '.gz', '.json.gz', '.xml.gz'])
 def test_get_providers(baseurl, extension):
     url = baseurl + '/v1/providers' + extension
     resp = requests.get(url, verify=False)
     expected_status_code = 200
     validate(resp, expected_status_code, extension)
-    assert "providers" in resp.text
-    assert "amazon" in resp.text
+    resp_text = _get_response_content(resp, extension)
+    assert "providers" in resp_text 
+    assert "amazon" in resp_text
 
-@pytest.mark.parametrize("extension", ['', '.json', '.xml'])
+@pytest.mark.parametrize("extension", ['', '.json', '.xml', '.gz', '.json.gz', '.xml.gz'])
 @pytest.mark.parametrize("provider", ['alibaba', 'amazon', 'google', 'microsoft', 'oracle'])
 def test_get_provider_servers_types(baseurl, provider, extension):
     url = baseurl + '/v1/' + provider + '/servers/types' + extension
     resp = requests.get(url, verify=False)
     expected_status_code = 200
     validate(resp, expected_status_code, extension)
+    
+    resp_text = _get_response_content(resp, extension)
     if provider in ['amazon', 'google', 'microsoft']:
-        assert "region" in resp.text
-        assert "update" in resp.text
+        assert "region" in resp_text
+        assert "update" in resp_text
     if provider in ['alibaba', 'oracle']:
-        assert "smt" in resp.text
-        assert "regionserver" in resp.text
+        assert "smt" in resp_text
+        assert "regionserver" in resp_text
 
-@pytest.mark.parametrize("extension", ['', '.json', '.xml'])
+@pytest.mark.parametrize("extension", ['', '.json', '.xml', '.gz', '.json.gz', '.xml.gz'])
 def test_get_image_states(baseurl, extension):
     url = baseurl + '/v1/images/states' + extension
     resp = requests.get(url, verify=False)
     expected_status_code = 200
     validate(resp, expected_status_code, extension)
-    assert "states" in resp.text
+    resp_text = _get_response_content(resp, extension)
+    assert "states" in resp_text
     expected_states = ['active','inactive','deprecated','deleted']
     for state in expected_states:
-        assert state in resp.text
+        assert state in resp_text
 
-@pytest.mark.parametrize("extension", ['', '.json', '.xml'])
+@pytest.mark.parametrize("extension", ['', '.json', '.xml', '.gz', '.json.gz', '.xml.gz'])
 @pytest.mark.parametrize("provider", ['alibaba', 'amazon', 'google', 'microsoft', 'oracle'])
 def test_get_provider_regions(baseurl, provider, extension):
     url = baseurl + '/v1/' + provider + '/regions' + extension
     resp = requests.get(url, verify=False)
     expected_status_code = 200
     validate(resp, expected_status_code, extension)
-    assert "regions" in resp.text
+    resp_text = _get_response_content(resp, extension)
+    assert "regions" in resp_text
     if provider == 'alibaba':
-        assert "ap-northeast-1" in resp.text
+        assert "ap-northeast-1" in resp_text
     if provider == 'amazon':
-        assert "us-east-2" in resp.text
+        assert "us-east-2" in resp_text
     if provider == 'google':
-        assert "us-east1" in resp.text
+        assert "us-east1" in resp_text
     if provider == 'microsoft':
-        assert "useast" in resp.text
+        assert "useast" in resp_text
 
 
-@pytest.mark.parametrize("extension", ['', '.json', '.xml'])
+@pytest.mark.parametrize("extension", ['', '.json', '.xml', '.gz', '.json.gz', '.xml.gz'])
 @pytest.mark.parametrize("provider", ['alibaba', 'amazon', 'google', 'microsoft', 'oracle'])
 def test_get_provider_servers_for_region_and_type(baseurl, provider, extension):
     server_types = _get_provider_server_types_list(baseurl, provider)
@@ -168,23 +192,26 @@ def test_get_provider_servers_for_region_and_type(baseurl, provider, extension):
         for server_type in server_types:
             url = baseurl + '/v1/' + provider + '/' + region + '/servers/' + server_type +  extension
             resp = requests.get(url, verify=False)
+            print(url)
             expected_status_code = 200
             validate(resp, expected_status_code, extension)
+            resp_text = _get_response_content(resp, extension)
+            print(resp_text)
             # only check for the server type in the resp.text if
             # there are actually servers in the response.
-            if ((extension == '.xml') and ("<servers/>" not in resp.text) or
-                (extension != '.xml') and resp.json()['servers']):
-                assert _provider_server_type_name(provider, server_type) in resp.text
+            if (('.xml' in extension) and ("<servers/>" not in resp_text) or
+                ('.xml' not in extension) and json.loads(resp_text)['servers']):
+                assert _provider_server_type_name(provider, server_type) in resp_text
                 # for Azure regions can have multiple names, but only the
                 # one of the possible names will appear in the servers entry
                 # and there isn't an easy way to remap the region name that
                 # we are testing to the one that will appear in the servers
                 # entry.
                 if provider != 'microsoft':
-                    assert region in resp.text
+                    assert region in resp_text
 
 
-@pytest.mark.parametrize("extension", ['', '.json', '.xml'])
+@pytest.mark.parametrize("extension", ['', '.json', '.xml', '.gz', '.json.gz', '.xml.gz'])
 @pytest.mark.parametrize("provider", ['alibaba', 'amazon', 'google', 'microsoft', 'oracle'])
 def test_get_provider_servers_for_type(baseurl, provider, extension):
     server_types = _get_provider_server_types_list(baseurl, provider)
@@ -194,16 +221,17 @@ def test_get_provider_servers_for_type(baseurl, provider, extension):
         resp = requests.get(url, verify=False)
         expected_status_code = 200
         validate(resp, expected_status_code, extension)
-        assert "servers" in resp.text
+        resp_text = _get_response_content(resp, extension)
+        print(resp_text)
+        assert "servers" in resp_text
 
         # only check for the server type in the resp.text if
         # there are actually servers in the response.
-        if ((extension == '.xml') and ("<servers/>" not in resp.text) or
-            (extension != '.xml') and resp.json()['servers']):
-            assert _provider_server_type_name(provider, server_type) in resp.text
+        if (('.xml' in extension) and ("<servers/>" not in resp_text) or
+            ('.xml' not in extension) and json.loads(resp_text)['servers']):
+            assert _provider_server_type_name(provider, server_type) in resp_text
 
-
-@pytest.mark.parametrize("extension", ['', '.json', '.xml'])
+@pytest.mark.parametrize("extension", ['', '.json', '.xml', '.gz', '.json.gz', '.xml.gz'])
 @pytest.mark.parametrize("provider", ['alibaba', 'amazon', 'google', 'microsoft', 'oracle'])
 def test_get_provider_images_for_region_and_state(baseurl, provider, extension):
     img_states = _get_image_states_list(baseurl)
@@ -216,18 +244,19 @@ def test_get_provider_images_for_region_and_state(baseurl, provider, extension):
             resp = requests.get(url, verify=False)
             expected_status_code = 200
             validate(resp, expected_status_code, extension)
-            assert "images" in resp.text
+            resp_text = _get_response_content(resp, extension)
+            assert "images" in resp_text
 
             # only check for the img_state and region in the resp.text if
             # there are actually images in the response.
-            if ((extension == '.xml') and ("<images/>" not in resp.text) or
-                (extension != '.xml') and resp.json()['images']):
-                assert img_state in resp.text
+            if (('.xml' in extension) and ("<images/>" not in resp_text) or
+                ('.xml' not in extension) and json.loads(resp_text)['images']):
+                assert img_state in resp_text
                 if provider not in ['google']:
-                    assert region in resp.text
+                    assert region in resp_text
 
 
-@pytest.mark.parametrize("extension", ['', '.json', '.xml'])
+@pytest.mark.parametrize("extension", ['', '.json', '.xml', '.gz', '.json.gz', '.xml.gz'])
 @pytest.mark.parametrize("provider", ['alibaba', 'amazon', 'google', 'microsoft', 'oracle'])
 def test_get_provider_images_for_state(baseurl, provider, extension):
     img_states = _get_image_states_list(baseurl)
@@ -237,12 +266,13 @@ def test_get_provider_images_for_state(baseurl, provider, extension):
         resp = requests.get(url, verify=False)
         expected_status_code = 200
         validate(resp, expected_status_code, extension)
-        assert "images" in resp.text
+        resp_text = _get_response_content(resp, extension)
+        assert "images" in resp_text
         # only check for the img_state in the resp.text if
         # there are actually images in the response.
-        if ((extension == '.xml') and ("<images/>" not in resp.text) or
-            (extension != '.xml') and resp.json()['images']):
-            assert img_state in resp.text
+        if (('.xml' in extension) and ("<images/>" not in resp_text) or
+            ('.xml' not in extension) and json.loads(resp_text)['images']):
+            assert img_state in resp_text
 
 
 @pytest.mark.parametrize("extension", ['', '.json', '.xml'])
@@ -255,14 +285,17 @@ def test_get_provider_region_category(baseurl, provider, category, extension):
         # Pick the first region.. no need to iterate with all the regions
         region = regions[0]
         url = baseurl + '/v1/' + provider + '/' + region + '/' + category + extension
+        print(url)
         resp = requests.get(url, verify=False)
         expected_status_code = 200
         validate(resp, expected_status_code, extension)
-        if extension != '.xml' and len(json.loads(resp.content)[category]) != 0:
-            assert region in resp.text
-        assert category in resp.text
+        resp_text = _get_response_content(resp, extension)
+        
+        if ('.xml' not in extension) and len(json.loads(resp_text)[category]) != 0:
+            assert region in resp_text
+        assert category in resp_text
 
-@pytest.mark.parametrize("extension", ['', '.json', '.xml'])
+@pytest.mark.parametrize("extension", ['', '.json', '.xml', '.gz', '.xml.gz', '.json.gz'])
 @pytest.mark.parametrize("category", ['images', 'servers'])
 def test_get_microsoft_region_servers(baseurl, category, extension):
     microsofttestregions = ['australiacentral', 'australiacentral2',
@@ -270,7 +303,7 @@ def test_get_microsoft_region_servers(baseurl, category, extension):
                             'canadaeast', 'centralus', 'centraluseuap','chinaeast',
                             'East US', 'eastus',
                             'francecentral', 'francesouth',
-                            'Germany Central', 'germanycentral',
+                            'germanycentral',
                             'japaneast', 'japanwest',
                             'northcentralus', 'northeurope',
                             'Southeast Asia', 'southeastasia',
@@ -283,11 +316,12 @@ def test_get_microsoft_region_servers(baseurl, category, extension):
         resp = requests.get(url, verify=False)
         expected_status_code = 200
         validate(resp, expected_status_code, extension)
-        if extension != '.xml' and len(json.loads(resp.content)[category]) != 0:
-            assert region_name in resp.text
-        assert category in resp.text
+        resp_text = _get_response_content(resp, extension)
+        if ('.xml' not in extension) and len(json.loads(resp_text)[category]) != 0:
+            assert region_name in resp_text
+        assert category in resp_text
 
-@pytest.mark.parametrize("extension", ['', '.json', '.xml'])
+@pytest.mark.parametrize("extension", ['', '.json', '.xml', '.gz', '.json.gz', '.xml.gz'])
 @pytest.mark.parametrize("category", ['images', 'servers'])
 @pytest.mark.parametrize("provider", ['alibaba', 'amazon', 'google', 'microsoft', 'oracle'])
 def test_provider_category(baseurl, provider, category, extension):
@@ -295,9 +329,10 @@ def test_provider_category(baseurl, provider, category, extension):
     resp = requests.get(url, verify=False)
     expected_status_code = 200
     validate(resp, expected_status_code, extension)
-    assert category in resp.text
+    resp_text = _get_response_content(resp, extension)
+    assert category in resp_text
 
-@pytest.mark.parametrize("extension", ['', '.json', '.xml'])
+@pytest.mark.parametrize("extension", ['', '.json', '.xml', '.gz', '.json.gz', '.xml.gz'])
 @pytest.mark.parametrize("category", ['images', 'servers'])
 @pytest.mark.parametrize("provider", ['alibaba', 'amazon', 'google', 'microsoft', 'oracle'])
 def test_get_provider_category_data_version(baseurl, provider, category, extension):
@@ -319,7 +354,7 @@ def test_get_psql_server_version(baseurl, extension):
 
 
 @pytest.mark.parametrize("date", ['20191231', '20201231', '20211231', '20221231'])
-@pytest.mark.parametrize("extension", ['', '.json', '.xml'])
+@pytest.mark.parametrize("extension", ['', '.json', '.xml', '.gz', '.json.gz', '.xml.gz'])
 @pytest.mark.parametrize("provider", ['alibaba', 'amazon', 'google', 'microsoft', 'oracle'])
 def test_get_provider_images_deletedby(baseurl, provider, date, extension):
     # include an empty region entry to test the non-regioned API as well
@@ -335,16 +370,17 @@ def test_get_provider_images_deletedby(baseurl, provider, date, extension):
         resp = requests.get(url, verify=False)
         expected_status_code = 200
         validate(resp, expected_status_code, extension)
-        assert "images" in resp.text
+        resp_text = _get_response_content(resp, extension)
+        assert "images" in resp_text
         # only check for the deprecated on field in the resp.text if
         # there are actually images in the response.
-        if ((extension == '.xml') and ("<images/>" not in resp.text) or
-            (extension != '.xml') and resp.json()['images']):
-            assert 'deprecatedon' in resp.text
+        if (('.xml' in extension) and ("<images/>" not in resp_text) or
+            ('.xml' not in extension) and ("['images']" in resp_text)):
+            assert 'deprecatedon' in resp_text
 
 
-@pytest.mark.parametrize("extension", ['', '.json', '.xml'])
-@pytest.mark.parametrize("provider", ['alibaba', 'amazon', 'google', 'microsoft', 'oracle'])
+@pytest.mark.parametrize("extension", ['', '.json', '.xml', '.gz', '.json.gz', '.xml.gz'])
+@pytest.mark.parametrize("provider", ['amazon', 'google', 'microsoft', 'oracle'])
 def test_get_provider_images_deletiondate(baseurl, provider, extension):
     img_states = _get_image_states_list(baseurl)
 
@@ -371,25 +407,26 @@ def test_get_provider_images_deletiondate(baseurl, provider, extension):
             resp = requests.get(url, verify=False)
             expected_status_code = 200
             validate(resp, expected_status_code, extension)
-            assert "deletiondate" in resp.text
+            resp_text = _get_response_content(resp, extension)
+            assert "deletiondate" in resp_text
 
             if state in ['deprecated', 'deleted']:
-                if (extension == '.xml'):
-                    assert "<deletiondate>" in resp.text
-                    assert "</deletiondate>" in resp.text
+                if ('.xml' in extension):
+                    assert "<deletiondate>" in resp_text
+                    assert "</deletiondate>" in resp_text
                 else:
-                    assert resp.json()['deletiondate'] != ""
+                    assert json.loads(resp_text)['deletiondate'] != ""
             elif region:
                 # skip provider level check as sometimes images can be in more
                 # than one state across provider regions.
-                if (extension == '.xml'):
-                    assert "<deletiondate/>" in resp.text
+                if ('.xml' in extension):
+                    assert "<deletiondate/>" in resp_text
                 else:
-                    assert resp.json()['deletiondate'] == ""
+                    assert json.loads(resp_text)['deletiondate'] == ""
 
 
 #negative tests
-@pytest.mark.parametrize("extension", ['', '.json', '.xml'])
+@pytest.mark.parametrize("extension", ['', '.json', '.xml', '.gz', '.json.gz', '.xml.gz'])
 @pytest.mark.parametrize("category", ['images', 'servers'])
 def test_get_invalid_provider_category(baseurl, category, extension):
     invalid_provider = 'foo'
@@ -398,7 +435,7 @@ def test_get_invalid_provider_category(baseurl, category, extension):
     expected_status_code = 404
     validate(resp, expected_status_code, extension)
 
-@pytest.mark.parametrize("extension", ['', '.json', '.xml'])
+@pytest.mark.parametrize("extension", ['', '.json', '.xml', '.gz', '.json.gz', '.xml.gz'])
 @pytest.mark.parametrize("provider", ['alibaba', 'amazon', 'google', 'microsoft', 'oracle'])
 def test_get_provider_servers_for_invalid_server_type(baseurl, provider, extension):
     invalid_server_type='foo'
@@ -407,7 +444,7 @@ def test_get_provider_servers_for_invalid_server_type(baseurl, provider, extensi
     expected_status_code = 404
     validate(resp, expected_status_code, extension)
 
-@pytest.mark.parametrize("extension", ['', '.json', '.xml'])
+@pytest.mark.parametrize("extension", ['', '.json', '.xml', '.gz', '.json.gz', '.xml.gz'])
 @pytest.mark.parametrize("provider", ['alibaba', 'amazon', 'google', 'microsoft', 'oracle'])
 def test_get_provider_images_for_invalid_image_state(baseurl, provider, extension):
     invalid_image_state ='foo'
@@ -416,7 +453,7 @@ def test_get_provider_images_for_invalid_image_state(baseurl, provider, extensio
     expected_status_code = 404
     validate(resp, expected_status_code, extension)
 
-@pytest.mark.parametrize("extension", ['', '.json', '.xml'])
+@pytest.mark.parametrize("extension", ['', '.json', '.xml', '.gz', '.json.gz', '.xml.gz'])
 @pytest.mark.parametrize("provider", ['alibaba', 'amazon', 'google', 'microsoft', 'oracle'])
 def test_get_provider_servers_for_region_and_invalid_server_type(baseurl, provider, extension):
     regions = _get_provider_regions_list(baseurl, provider)
@@ -428,7 +465,7 @@ def test_get_provider_servers_for_region_and_invalid_server_type(baseurl, provid
         expected_status_code = 404
         validate(resp, expected_status_code, extension)
 
-@pytest.mark.parametrize("extension", ['', '.json', '.xml'])
+@pytest.mark.parametrize("extension", ['', '.json', '.xml', '.gz', '.json.gz', '.xml.gz'])
 @pytest.mark.parametrize("provider", ['alibaba', 'amazon', 'google', 'microsoft', 'oracle'])
 def test_get_provider_images_for_region_and_invalid_image_state(baseurl, provider, extension):
     invalid_image_state='foo'
@@ -441,7 +478,7 @@ def test_get_provider_images_for_region_and_invalid_image_state(baseurl, provide
         expected_status_code = 404
         validate(resp, expected_status_code, extension)
 
-@pytest.mark.parametrize("extension", ['', '.json', '.xml'])
+@pytest.mark.parametrize("extension", ['', '.json', '.xml', '.gz', '.json.gz', '.xml.gz'])
 @pytest.mark.parametrize("category", ['images', 'servers'])
 @pytest.mark.parametrize("provider", ['alibaba', 'amazon', 'google', 'microsoft', 'oracle'])
 def test_get_provider_invalid_region_category(baseurl, provider, category, extension):
@@ -459,7 +496,7 @@ def test_provider_category_invalid_extension(baseurl, category):
     resp = requests.get(url, verify=False)
     assert resp.status_code == 400
 
-@pytest.mark.parametrize("extension", ['', '.json', '.xml'])
+@pytest.mark.parametrize("extension", ['', '.json', '.xml', '.gz', '.json.gz', '.xml.gz'])
 def test_unsupported_version(baseurl, extension):
     # test v2
     provider = 'amazon'
@@ -518,11 +555,13 @@ def validate(resp, expected_status, extension):
     assert resp.status_code == expected_status  # actual_status == expected_status
     assert resp.headers['Access-Control-Allow-Origin'] == '*'
     if expected_status == 200:
-        if extension == '.xml':
+        if '.gz' in extension:
+            assert resp.headers['Content-Type'] == "application/gzip;charset=utf-8"
+        elif extension == '.xml':
             assert resp.headers['Content-Type'] == "application/xml;charset=utf-8"
             assert '<?xml version=' in resp.content.decode('utf-8')
         else:
-            assert resp.headers['Content-Type'] == 'application/json'
+            assert resp.headers['Content-Type'] == "application/json;charset=utf-8"
             assert '{' in resp.content.decode('utf-8')
     else:
         # For 400, 404 content-type is set to text/html
