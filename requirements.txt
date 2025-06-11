@@ -8,18 +8,19 @@ decorator==5.1.1
 Flask==2.0.3
 Flask-Cors==4.0.1
 Flask-SQLAlchemy==2.5.1
-greenlet==2.0.2
+greenlet==2.0.2 ; python_version == '3.8'
+greenlet==3.2.1 ; python_version > '3.8'
 importlib-metadata==4.8.3
 importlib-resources==5.4.0
 itsdangerous==2.0.1
 Jinja2==3.0.3
 jmespath==0.10.0
-lxml==5.2.2
+lxml==5.4.0
 Mako==1.1.6
 MarkupSafe==2.0.1
 pbr==6.0.0
 pint_models @ git+https://github.com/SUSE-Enceladus/public-cloud-info-models
-psycopg2-binary==2.9.8
+psycopg2-binary==2.9.10
 python-dateutil==2.9.0.post0
 python-editor==1.0.4
 s3transfer==0.5.2
