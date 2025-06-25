@@ -24,8 +24,13 @@
 %global _sitelibdir %{%{pythons}_sitelib}
 
 Name:           python-PintServer
+<<<<<<< gzip_compress
 Version:        2.0
 Release:        16
+=======
+Version:        2.0.16
+Release:        0
+>>>>>>> master
 Summary:        Pint Server
 License:        Apache-2.0
 Group:          Development/Languages/Python
