@@ -19,6 +19,8 @@ import json
 import mock
 import os
 import pytest
+import gzip
+import io
 
 import pint_server
 from pint_server.tests.unit import mock_pint_data
@@ -29,7 +31,7 @@ def test_root_request(client):
     assert 301 == rv.status_code
     assert 'https://www.suse.com/solutions/public-cloud/' == rv.location
 
-@pytest.mark.parametrize("extension", ['', '.json', '.xml'])
+@pytest.mark.parametrize("extension", ['', '.json', '.xml', '.gz', '.json.gz', '.xml.gz'])
 def test_supported_version(client, extension):
     provider = 'amazon'
     value = mock_pint_data.mocked_return_value_images[provider]
@@ -40,10 +42,11 @@ def test_supported_version(client, extension):
             rv = client.get(route)
             get_provider_images.assert_called_with(provider)
             validate(rv, 200, extension)
-            if extension != '.xml':
-                assert mock_pint_data.expected_json_images[provider] == json.loads(rv.data)
+            rv_data = get_response_content(rv, extension)
+            if '.xml' not in extension:
+                assert mock_pint_data.expected_json_images[provider] == json.loads(rv_data)
 
-@pytest.mark.parametrize("extension", ['', '.json', '.xml'])
+@pytest.mark.parametrize("extension", ['', '.json', '.xml', '.gz', '.json.gz', '.xml.gz'])
 def test_unsupported_version(client, extension):
     # test v2
     provider = 'amazon'
@@ -63,7 +66,7 @@ def test_get_database_server_version(client, extension):
         assert json.loads(rv.data) == {"database server version": "14.2"}
 
 @pytest.mark.parametrize("provider", ["alibaba", "amazon", "google", "microsoft", "oracle"])
-@pytest.mark.parametrize("extension", ['', '.json', '.xml'])
+@pytest.mark.parametrize("extension", ['', '.json', '.xml', '.gz', '.json.gz', '.xml.gz'])
 def test_get_provider_images(client, provider, extension):
     with mock.patch('pint_server.app.assert_valid_provider'):
         with mock.patch('pint_server.app.get_provider_images',
@@ -72,10 +75,11 @@ def test_get_provider_images(client, provider, extension):
             rv = client.get(route)
             get_provider_images.assert_called_with(provider)
             validate(rv, 200, extension)
-            if extension != '.xml':
-                assert mock_pint_data.expected_json_images[provider] == json.loads(rv.data)
+            rv_data = get_response_content(rv, extension)
+            if '.xml' not in extension:
+                assert mock_pint_data.expected_json_images[provider] == json.loads(rv_data)
 
-@pytest.mark.parametrize("extension", ['', '.json', '.xml'])
+@pytest.mark.parametrize("extension", ['', '.json', '.xml', '.gz', '.json.gz', '.xml.gz'])
 @pytest.mark.parametrize("category", ["images", "servers"])
 @pytest.mark.parametrize("provider", ['amazon', 'microsoft', 'google', 'alibaba', 'oracle'])
 def test_get_provider_valid_category(client, provider, category, extension):
@@ -87,8 +91,9 @@ def test_get_provider_valid_category(client, provider, category, extension):
                 rv = client.get(route)
                 get_provider_images.assert_called_with(provider)
                 validate(rv, 200, extension)
-                if extension != '.xml':
-                    assert mock_pint_data.expected_json_images[provider] == json.loads(rv.data)
+                rv_data = get_response_content(rv, extension)
+                if '.xml' not in extension:
+                    assert mock_pint_data.expected_json_images[provider] == json.loads(rv_data)
 
         if category == 'servers':
             with mock.patch('pint_server.app.get_provider_servers',
@@ -97,10 +102,11 @@ def test_get_provider_valid_category(client, provider, category, extension):
                 rv = client.get(route)
                 get_provider_servers.assert_called_with(provider)
                 validate(rv, 200, extension)
-                if extension != '.xml':
-                    assert mock_pint_data.expected_json_servers[provider] == json.loads(rv.data)
+                rv_data = get_response_content(rv, extension)
+                if '.xml' not in extension:
+                    assert mock_pint_data.expected_json_servers[provider] == json.loads(rv_data)
 
-@pytest.mark.parametrize("extension", ['', '.json', '.xml'])
+@pytest.mark.parametrize("extension", ['', '.json', '.xml', '.gz', '.json.gz', '.xml.gz'])
 def test_get_provider_invalid_category(client, extension):
     invalid_category = 'foo'
     provider = 'amazon'
@@ -110,7 +116,7 @@ def test_get_provider_invalid_category(client, extension):
         validate(rv, 400, extension)
 
 @pytest.mark.parametrize("server_type", ["region", "update"])  # regionserver, smt from original pint
-@pytest.mark.parametrize("extension", ['', '.json', '.xml'])
+@pytest.mark.parametrize("extension", ['', '.json', '.xml', '.gz', '.json.gz', '.xml.gz'])
 @pytest.mark.parametrize("provider", ['amazon', 'microsoft', 'google', 'alibaba', 'oracle'])
 def test_get_provider_servers_by_type(client, provider, server_type, extension):
     with mock.patch('pint_server.app.assert_valid_provider'):
@@ -123,11 +129,12 @@ def test_get_provider_servers_by_type(client, provider, server_type, extension):
             rv = client.get(route)
             get_provider_servers_for_type.assert_called_with(provider, server_type)
             validate(rv, 200, extension)
-            if extension != '.xml':
-                assert expected_servers == json.loads(rv.data)
+            rv_data = get_response_content(rv, extension)
+            if '.xml' not in extension:
+                assert expected_servers == json.loads(rv_data)
 
 @pytest.mark.parametrize("image_state", ["active", "inactive", "deprecated", "deleted"])
-@pytest.mark.parametrize("extension", ['', '.json', '.xml'])
+@pytest.mark.parametrize("extension", ['', '.json', '.xml', '.gz', '.json.gz', '.xml.gz'])
 @pytest.mark.parametrize("provider", ['amazon', 'microsoft', 'google', 'alibaba', 'oracle'])
 def test_get_provider_images_by_state(client, provider, image_state, extension):
     provider_images = mock_pint_data.mocked_return_value_images[provider]
@@ -140,11 +147,12 @@ def test_get_provider_images_by_state(client, provider, image_state, extension):
             rv = client.get(route)
             get_provider_images_for_state.assert_called_with(provider, image_state)
             validate(rv, 200, extension)
-            if extension != '.xml':
-                assert expected_images == json.loads(rv.data)
+            rv_data = get_response_content(rv, extension)
+            if '.xml' not in extension:
+                assert expected_images == json.loads(rv_data)
 
 @pytest.mark.parametrize("category", ["images", "servers"])
-@pytest.mark.parametrize("extension", ['', '.json', '.xml'])
+@pytest.mark.parametrize("extension", ['', '.json', '.xml', '.gz', '.json.gz', '.xml.gz'])
 @pytest.mark.parametrize("provider", ['alibaba', 'amazon', 'google', 'microsoft', 'oracle'])
 def test_get_provider_regions_category(client, provider, category, extension):
     mock_valid_regions = []
@@ -166,8 +174,9 @@ def test_get_provider_regions_category(client, provider, category, extension):
                             rv = client.get(route)
                             get_provider_images_for_region.assert_called_with(provider, region)
                             validate(rv, 200, extension)
-                            if extension != '.xml':
-                                assert expected_images == json.loads(rv.data)
+                            rv_data = get_response_content(rv, extension)
+                            if '.xml' not in extension:
+                                assert expected_images == json.loads(rv_data)
 
                     if category == 'servers':
                         provider_servers = mock_pint_data.mocked_return_value_servers[provider]
@@ -181,10 +190,11 @@ def test_get_provider_regions_category(client, provider, category, extension):
                             rv = client.get(route)
                             get_provider_servers_for_region.assert_called_with(provider, region)
                             validate(rv, 200, extension)
-                            if extension != '.xml':
-                                assert expected_servers == json.loads(rv.data)
+                            rv_data = get_response_content(rv, extension)
+                            if '.xml' not in extension:
+                                assert expected_servers == json.loads(rv_data)
 
-@pytest.mark.parametrize("extension", ['', '.json', '.xml'])
+@pytest.mark.parametrize("extension", ['', '.json', '.xml', '.gz', '.json.gz', '.xml.gz'])
 @pytest.mark.parametrize("provider", ['alibaba', 'amazon', 'google', 'microsoft', 'oracle'])
 @pytest.mark.parametrize("image_state", ['active', 'inactive', 'deleted', 'deprecated'])
 def test_get_provider_regions_images_by_state(client, provider, image_state, extension):
@@ -206,11 +216,12 @@ def test_get_provider_regions_images_by_state(client, provider, image_state, ext
                     rv = client.get(route)
                     get_provider_images_for_region_and_state.assert_called_with(provider, region, image_state)
                     validate(rv, 200, extension)
-                    if extension != '.xml':
-                        assert expected_images == json.loads(rv.data)
+                    rv_data = get_response_content(rv, extension)
+                    if '.xml' not in extension:
+                        assert expected_images == json.loads(rv_data)
 
 
-@pytest.mark.parametrize("extension", ['', '.json', '.xml'])
+@pytest.mark.parametrize("extension", ['', '.json', '.xml', '.gz', '.json.gz', '.xml.gz'])
 @pytest.mark.parametrize("provider", ['alibaba', 'amazon', 'google', 'microsoft', 'oracle'])
 @pytest.mark.parametrize("type", ['region', 'update'])
 def test_get_provider_regions_servers_by_type(client, provider, type, extension):
@@ -233,10 +244,11 @@ def test_get_provider_regions_servers_by_type(client, provider, type, extension)
                     rv = client.get(route)
                     get_provider_servers_for_region_and_type.assert_called_with(provider, region, type)
                     validate(rv, 200, extension)
-                    if extension != '.xml':
-                        assert expected_servers == json.loads(rv.data)
+                    rv_data = get_response_content(rv, extension)
+                    if '.xml' not in extension:
+                        assert expected_servers == json.loads(rv_data)
 
-@pytest.mark.parametrize("extension",['', '.json', '.xml'])
+@pytest.mark.parametrize("extension",['', '.json', '.xml', '.gz', '.json.gz', '.xml.gz'])
 @pytest.mark.parametrize("provider", ['alibaba', 'amazon', 'google', 'microsoft', 'oracle'])
 def test_get_provider_valid_region_invalidcategory(client, provider, extension):
     invalid_category='foo'
@@ -249,7 +261,7 @@ def test_get_provider_valid_region_invalidcategory(client, provider, extension):
             rv = client.get(route)
             validate(rv, 400, extension)
 
-@pytest.mark.parametrize("extension", ['', '.json', '.xml'])
+@pytest.mark.parametrize("extension", ['', '.json', '.xml', '.gz', '.json.gz', '.xml.gz'])
 def test_get_provider_valid_category_extension(client, extension):
     provider = 'amazon'
     category = 'images'
@@ -261,17 +273,18 @@ def test_get_provider_valid_category_extension(client, extension):
             get_provider_images.assert_called_with(provider)
             validate(rv, 200, extension)
 
-@pytest.mark.parametrize("extension", ['', '.json', '.xml'])
+@pytest.mark.parametrize("extension", ['', '.json', '.xml', '.gz', '.json.gz', '.xml.gz'])
 def test_get_providers(client, extension):
     """Test GET /v1/providers"""
     with mock.patch('pint_server.app.get_supported_providers',
                     return_value=mock_pint_data.get_supported_providers_return_value):
         rv = client.get('/v1/providers' + extension)
         validate(rv, 200, extension)
-        if extension != '.xml':
-            assert mock_pint_data.expected_json_providers == json.loads(rv.data)
+        rv_data = get_response_content(rv, extension)
+        if '.xml' not in extension:
+            assert mock_pint_data.expected_json_providers == json.loads(rv_data)
 
-@pytest.mark.parametrize("extension", ['', '.json', '.xml'])
+@pytest.mark.parametrize("extension", ['', '.json', '.xml', '.gz', '.json.gz', '.xml.gz'])
 def test_get_provider_servers_types(client, extension):
     """Test GET /v1/<provider>/servers/types"""
     provider = 'amazon'
@@ -282,19 +295,21 @@ def test_get_provider_servers_types(client, extension):
             rv = client.get(route)
             get_provider_server_types.assert_called_with(provider)
             validate(rv, 200, extension)
-            if extension != '.xml':
-                assert mock_pint_data.expected_json_server_types == json.loads(rv.data)
+            rv_data = get_response_content(rv, extension)
+            if '.xml' not in extension:
+                assert mock_pint_data.expected_json_server_types == json.loads(rv_data)
 
-@pytest.mark.parametrize("extension", ['', '.json', '.xml'])
+@pytest.mark.parametrize("extension", ['', '.json', '.xml', '.gz', '.json.gz', '.xml.gz'])
 def test_get_image_states(client, extension):
     with mock.patch('pint_server.app.list_images_states'):
         route = '/v1/images/states' + extension
         rv = client.get(route)
         validate(rv, 200, extension)
-        if extension != '.xml':
-            assert mock_pint_data.expected_json_image_states == json.loads(rv.data)
+        rv_data = get_response_content(rv, extension)
+        if '.xml' not in extension:
+            assert mock_pint_data.expected_json_image_states == json.loads(rv_data)
 
-@pytest.mark.parametrize("extension", ['', '.json', '.xml'])
+@pytest.mark.parametrize("extension", ['', '.json', '.xml', '.gz', '.json.gz', '.xml.gz'])
 def test_get_provider_regions(client, extension):
     provider = 'amazon'
     with mock.patch('pint_server.app.assert_valid_provider'):
@@ -302,12 +317,13 @@ def test_get_provider_regions(client, extension):
             route = '/v1/' + provider + '/regions' + extension
             rv = client.get(route)
             validate(rv, 200, extension)
-            if extension != '.xml':
-                assert mock_pint_data.expected_json_regions[provider] == json.loads(rv.data)
+            rv_data = get_response_content(rv, extension)
+            if '.xml' not in extension:
+                assert mock_pint_data.expected_json_regions[provider] == json.loads(rv_data)
 
 
 @pytest.mark.parametrize("date", ['20191231', '20201231', '20211231', '20221231'])
-@pytest.mark.parametrize("extension", ['', '.json', '.xml'])
+@pytest.mark.parametrize("extension", ['', '.json', '.xml', '.gz', '.json.gz', '.xml.gz'])
 @pytest.mark.parametrize("provider", ['alibaba', 'amazon', 'google', 'microsoft', 'oracle'])
 def test_get_provider_regions_deletedby(client, provider, date, extension):
     mock_valid_regions = [None] + [r['name']
@@ -334,12 +350,13 @@ def test_get_provider_regions_deletedby(client, provider, date, extension):
                         else:
                             get_provider_images_to_be_deletedby.assert_called_with(deletedby, provider)
                         validate(rv, 200, extension)
-                        if extension != '.xml':
-                            assert expected_images == json.loads(rv.data)
+                        rv_data = get_response_content(rv, extension)
+                        if '.xml' not in extension:
+                            assert expected_images == json.loads(rv_data)
 
 
 @pytest.mark.parametrize("image", mock_pint_data.mocked_deletiondate_images.keys())
-@pytest.mark.parametrize("extension", ['', '.json', '.xml'])
+@pytest.mark.parametrize("extension", ['', '.json', '.xml', '.gz', '.json.gz', '.xml.gz'])
 @pytest.mark.parametrize("provider", mock_pint_data.mocked_expected_deletiondate.keys())
 def test_get_provider_regions_image_deletiondate(client, provider, image, extension):
     mock_valid_regions = [None] + [r['name']
@@ -349,6 +366,7 @@ def test_get_provider_regions_image_deletiondate(client, provider, image, extens
             with mock.patch('pint_server.app.assert_valid_provider_region'):
                 deletiondate_images = mock_pint_data.mocked_deletiondate_images[image]
                 expected_deletiondate = mock_pint_data.mocked_expected_deletiondate[provider][image]
+                print(expected_deletiondate)
                 with mock.patch('pint_server.app.query_image_in_provider_region',
                                 return_value=deletiondate_images) as query_image_in_provider_region:
                     route = '/v1/' + provider
@@ -358,11 +376,12 @@ def test_get_provider_regions_image_deletiondate(client, provider, image, extens
                     rv = client.get(route)
                     query_image_in_provider_region.assert_called_with(image, provider, region)
                     validate(rv, 200, extension)
-                    if extension == '.xml':
+                    rv_data = get_response_content(rv, extension)
+                    if '.xml' in extension:
                         if expected_deletiondate:
-                            assert expected_deletiondate in str(rv.data)
+                            assert expected_deletiondate in str(rv_data)
                     else:
-                        assert expected_deletiondate == rv.json['deletiondate']
+                        assert expected_deletiondate == json.loads(rv_data)['deletiondate']
 
 
 def test_get_max_payload_size_default_value(client):
@@ -378,13 +397,31 @@ def validate(rv, expected_status, extension):
     assert expected_status == rv.status_code
     assert rv.headers['Access-Control-Allow-Origin'] == '*'
     if expected_status == 200:
-        if extension == '.xml':
+        if '.gz' in extension:
+            assert rv.headers['Content-Type'] == "application/gzip;charset=utf-8"
+        elif extension == '.xml':
             assert rv.headers['Content-Type'] == "application/xml;charset=utf-8"
             assert '<?xml version=' in rv.data.decode('utf-8')
         else:
-            assert rv.headers['Content-Type'] == 'application/json'
+            assert rv.headers['Content-Type'] == "application/json;charset=utf-8"
             assert '{' in rv.data.decode('utf-8')
     else:
         # For 400, 404 content-type is set to text/html
         assert rv.headers['Content-Type'] == 'text/html; charset=utf-8'
         assert len(rv.data) == 0
+
+def decompress_gzip(resp):
+    with gzip.GzipFile(fileobj=io.BytesIO(resp.data), mode='rb') as f:
+        uncompressed_data = f.read()
+    return uncompressed_data
+
+def get_response_content(resp, extension):
+    if '.gz' in extension:
+        resp_content = decompress_gzip(resp).decode('utf-8')
+        if '.xml' in extension:
+            assert '<?xml version=' in resp_content
+        else:
+            assert '{' in resp_content
+    else:
+        resp_content = resp.data
+    return resp_content
