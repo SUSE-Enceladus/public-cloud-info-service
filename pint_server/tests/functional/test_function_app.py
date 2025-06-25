@@ -556,12 +556,12 @@ def validate(resp, expected_status, extension):
     assert resp.headers['Access-Control-Allow-Origin'] == '*'
     if expected_status == 200:
         if '.gz' in extension:
-            assert resp.headers['Content-Type'] == "application/gzip; charset=utf-8"
+            assert resp.headers['Content-Type'] == "application/gzip;charset=utf-8"
         elif extension == '.xml':
             assert resp.headers['Content-Type'] == "application/xml;charset=utf-8"
             assert '<?xml version=' in resp.content.decode('utf-8')
         else:
-            assert resp.headers['Content-Type'] == 'application/json'
+            assert resp.headers['Content-Type'] == "application/json;charset=utf-8"
             assert '{' in resp.content.decode('utf-8')
     else:
         # For 400, 404 content-type is set to text/html

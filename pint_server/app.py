@@ -689,31 +689,35 @@ def get_max_payload_size():
     else:
         return DEFAULT_MAX_PAYLOAD_SIZE
 
+
 def trim_images_payload(images):
     payload_size = jsonify(images=images).content_length
     max_payload_size = get_max_payload_size()
-
     if not request.path.endswith('.gz') and (payload_size > max_payload_size):
-        # NOTE: assuming the size of the entries are evenly distributed, we
-        # determine the percentage of entries to trim from the end of the list,
-        # as the list is sorted in decending order by publishedon date, by
-        # calculating the percentage over the maximum payload size. Then
-        # trim the same percentage off the list, rounding up to be safe.
-        trim_size  = math.ceil(
-            ((payload_size - max_payload_size) / payload_size) * len(images))
-        last_publishedon = images[-trim_size]['publishedon']
-        images = images[:-trim_size]
-
-        # Now make sure we don't have partial data by finished triming all the
-        # images from all regions that have the same publishedon date that of
-        # the last image that got trimmed.
-        trim_size = 0
-        while images[-(trim_size + 1)]['publishedon'] == last_publishedon:
-            trim_size += 1
-        if trim_size:
-            images = images[:-trim_size]
+        images = get_trimmed_images(payload_size, max_payload_size, images)
     return images
 
+
+def get_trimmed_images(payload_size, max_payload_size, images):
+    # NOTE: assuming the size of the entries are evenly distributed, we
+    # determine the percentage of entries to trim from the end of the list,
+    # as the list is sorted in decending order by publishedon date, by
+    # calculating the percentage over the maximum payload size. Then
+    # trim the same percentage off the list, rounding up to be safe.
+    trim_size  = math.ceil(
+        ((payload_size - max_payload_size) / payload_size) * len(images))
+    last_publishedon = images[-trim_size]['publishedon']
+    images = images[:-trim_size]
+
+    # Now make sure we don't have partial data by finished triming all the
+    # images from all regions that have the same publishedon date that of
+    # the last image that got trimmed.
+    trim_size = 0
+    while images[-(trim_size + 1)]['publishedon'] == last_publishedon:
+        trim_size += 1
+    if trim_size:
+        images = images[:-trim_size]
+    return images
 
 def get_provider_images(provider):
     images = PROVIDER_IMAGES_MODEL_MAP[provider].query.filter(
@@ -767,24 +771,63 @@ def assert_valid_date(date):
         abort(Response('', status=404))
 
 
-def make_response(content_dict, collection_name, element_name):
-    if request.path.endswith('.xml'):
-        return Response(
-            json_to_xml(content_dict, collection_name, element_name),
-            mimetype='application/xml;charset=utf-8')
+def make_response_payload(content_dict, collection_name, element_name, charset):
+    # generate xml or json formatted payload
+    if 'xml' in request.path:
+        payload = json_to_xml(content_dict, collection_name, element_name)
+        app_type = 'xml'
     else:
         if collection_name:
             content = {collection_name: content_dict}
         else:
             content = content_dict
-        if request.path.endswith('.gz'):
-            if request.path.endswith('.xml.gz'):
-               return Response( gzip.compress((json_to_xml(content_dict, collection_name, element_name)).encode('utf-8'), compresslevel=9), mimetype='application/gzip; charset=utf-8')
-            else:
-               return Response( gzip.compress((json.dumps(content, separators=(',', ':'))).encode('utf-8'), compresslevel=9), mimetype='application/gzip; charset=utf-8')
-        else:
-            return jsonify(**content)
+        payload = json.dumps(content, separators=(',', ':'))
+        app_type = 'json'
 
+    # encode the payload with the desired charset
+    payload = payload.encode(charset)
+    return app_type, payload
+
+
+def make_response(content_dict, collection_name, element_name):
+
+    charset = 'utf-8'
+    app_type, payload = make_response_payload(content_dict, collection_name, element_name, charset)
+
+    if request.path.endswith('.gz'):
+        uncompressed_payload = payload
+        payload = gzip.compress(payload, compresslevel=9)
+        max_payload_size = get_max_payload_size()
+
+        # Check length of compressed payload
+        if len(payload) > max_payload_size:
+            max_size = get_max_payload_for_limit(uncompressed_payload, max_payload_size)
+
+            # Trim the payload so that compressed data does not exceed MAX_PAYLOAD_SIZE limit
+            trimmed_payload = get_trimmed_images(len(uncompressed_payload), max_size, content_dict)
+
+            app_type, temp_payload = make_response_payload(trimmed_payload, collection_name, element_name, charset)
+            payload = gzip.compress(temp_payload, compresslevel=9)
+
+        app_type = 'gzip'
+
+    # generate an appropriate mimetype value
+    mimetype = 'application/%s;charset=%s' % (app_type, charset)
+    return Response(payload, mimetype=mimetype)
+
+
+# Estimates how much payload data can fit under MAX_PAYLOAD_SIZE compressed limit
+def get_max_payload_for_limit(payload, limit_bytes):
+    low, high = 0, len(payload)
+    while low < high:
+        mid = (low + high) // 2
+        compressed = gzip.compress(payload[:mid], compresslevel=9)
+        if len(compressed) <= limit_bytes:
+            low = mid + 1
+        else:
+            high = mid
+    truncated = payload[:low-1]
+    return len(truncated)
 
 @app.route('/v1/providers', methods=['GET'])
 @app.route('/v1/providers.json', methods=['GET'])
