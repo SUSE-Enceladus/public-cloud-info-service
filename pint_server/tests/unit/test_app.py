@@ -382,7 +382,7 @@ def validate(rv, expected_status, extension):
             assert rv.headers['Content-Type'] == "application/xml;charset=utf-8"
             assert '<?xml version=' in rv.data.decode('utf-8')
         else:
-            assert rv.headers['Content-Type'] == 'application/json'
+            assert rv.headers['Content-Type'] == "application/json;charset=utf-8"
             assert '{' in rv.data.decode('utf-8')
     else:
         # For 400, 404 content-type is set to text/html
