@@ -270,7 +270,7 @@ def test_get_microsoft_region_servers(baseurl, category, extension):
                             'canadaeast', 'centralus', 'centraluseuap','chinaeast',
                             'East US', 'eastus',
                             'francecentral', 'francesouth',
-                            'Germany Central', 'germanycentral',
+                            'germanycentral',
                             'japaneast', 'japanwest',
                             'northcentralus', 'northeurope',
                             'Southeast Asia', 'southeastasia',
@@ -522,7 +522,7 @@ def validate(resp, expected_status, extension):
             assert resp.headers['Content-Type'] == "application/xml;charset=utf-8"
             assert '<?xml version=' in resp.content.decode('utf-8')
         else:
-            assert resp.headers['Content-Type'] == 'application/json'
+            assert resp.headers['Content-Type'] == "application/json;charset=utf-8"
             assert '{' in resp.content.decode('utf-8')
     else:
         # For 400, 404 content-type is set to text/html
