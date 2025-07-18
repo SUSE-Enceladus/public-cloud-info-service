@@ -87,7 +87,6 @@ install -m 0755 serverless_app.py %{buildroot}/var/task/
 %license LICENSE
 %doc README.rst
 %{_sitelibdir}/pint_server*
-%{_sitelibdir}/pint_server-%{version}-py*.egg-info
 %dir /var/task
 /var/task/serverless_app.py
 
