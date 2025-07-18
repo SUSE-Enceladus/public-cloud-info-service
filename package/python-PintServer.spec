@@ -24,13 +24,13 @@
 %global _sitelibdir %{%{pythons}_sitelib}
 
 Name:           python-PintServer
-Version:        2.0.16
+Version:        2.0.17
 Release:        0
 Summary:        Pint Server
 License:        Apache-2.0
 Group:          Development/Languages/Python
 URL:            https://github.com/SUSE-Enceladus/public-cloud-info-service
-Source:         pint-server-2.0.16.tar.gz
+Source:         pint-server-2.0.17.tar.gz
 BuildRequires:  %{pythons}-pbr
 BuildRequires:  %{pythons}-dateutil
 BuildRequires:  %{pythons}-Flask
